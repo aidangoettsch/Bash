@@ -7,17 +7,18 @@
       "type": "rect",
       "x_len": 1000,
       "y_len": 20,
-      "rotate": false,
-      "bounce": 1.0,
-      "weight": 1.0
+      "bounce": 1.0
     }, {
       "x": 0,
       "y": 500,
       "type": "circle",
       "x_radius": 200,
-      "rotate": false,
-      "bounce": 1.0,
-      "weight": 1.0
+      "bounce": 1.0
+    }
+  ],
+  "spawns": [
+    {
+      "x":
     }
   ]
 }

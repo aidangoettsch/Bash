@@ -1,12 +1,17 @@
 import sys
-import pygame
+import pygame, pygame.gfxdraw
+from pygame.locals import *
 
 pygame.init()
 
-screen = pygame.display.set_mode((800, 800))
+screen_w = 1200
+screen_h = 800
+screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
-
+circle_x_inc = 2
 circle_x = 400
+circle = pygame.gfxdraw.aacircle(screen, circle_x, 400, 10, (255, 0, 0))
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -14,8 +19,14 @@ while True:
 
     screen.fill((0, 255, 135))
 
-    circle_x += 1
-    pygame.draw.circle(screen, (255, 0, 0), (circle_x + 2, 400), 20)
+    if circle_x >= screen_w or circle_x < 0: circle_x_inc *= -1
 
+    circle_x *= circle_x_inc
+
+    pygame.gfxdraw.aacircle(screen, circle_x, 400, 50, (255, 0, 0))
+    pygame.gfxdraw.filled_circle(screen, circle_x, 400, 50, (255, 0, 0))
+
+    clock.tick(60)
     pygame.display.update()
-    print(clock.get_fps())
+    print(circle_x_inc)
+    # print(clock.get_fps())

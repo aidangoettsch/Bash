@@ -12,25 +12,22 @@ except:
     sys.exit()
 
 # Variable Declarations
-font_slabo_reg = pygame.freetype.Font('resources/Slabo_REG.ttf', 27)
+# font_slabo_reg = pygame.freetype.Font('resources/Slabo_REG.ttf', 27) TODO: Fix fonts
 screen = pygame.display.set_mode((200, 200))
 state = "MENU"
 
-
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()
-
-    render_menu()
-
+# Core Functions
 def render_menu():
     """
     Renders the menu screen
 
     :return:
     """
+    # Background color
     screen.fill(pygame.Color(0, 150, 136))
+
+    # Buttons
+    pygame.draw.rect()
 
 def reset():
     """
@@ -48,6 +45,16 @@ def reset():
             render_menu()
         else:
             break
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+
+    render_menu()
+    pygame.display.update()
+
+
 
 
 # async def frame():
