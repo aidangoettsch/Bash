@@ -13,22 +13,10 @@ except:
     sys.exit()
 
 # Variable Declarations
-menu_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
 screen = pygame.display.set_mode((1200, 800))
 clock = pygame.time.Clock()
+menu_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
 state = "MENU"
-
-# Classes
-class Menu_Button():
-    def __init__(self, text, x, y, w, h):
-        self.text        = text
-        self.x           = x
-        self.y           = y
-        self.w           = w
-        self.h           = h
-        self.topl_loc    = (x, y)
-        self.botr_loc    = (x + w, y + h)
-        self.button_fill = pygame.draw.rect(screen, (167, 255, 235), (x, y, w, h))
 
 # Core Functions
 def render_menu():
@@ -40,12 +28,20 @@ def render_menu():
     # Background color
     screen.fill(pygame.Color(0, 150, 136))
 
-    # Title
-    menu_font.render("BASH")
-
     # Button - Main Server
-    pygame.draw.rect(screen, (167, 255, 235), (350, 200, 500, 80))
-    pygame.draw.rect(screen, (0, 0, 0), (350, 200, 500, 80), 2)
+    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
+    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
+    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
+    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
+
+def blit_text(text, x, y):
+    """
+    Blits text to the screen
+
+    :return:
+    """
+    text_surface = menu_font.render(text, (0, 0, 0), (0, 0, 0))
+    screen.blit(text_surface, text_surface.get_rect())
 
 def reset():
     """
@@ -63,6 +59,28 @@ def reset():
             render_menu()
         else:
             break
+
+# Classes
+class Menu_Button():
+    """
+    Represents a menu button
+
+    :return:
+    """
+
+    def __init__(self, text, x, y, w, h):
+        self.text          = text
+        self.x             = x
+        self.y             = y
+        self.w             = w
+        self.h             = h
+        self.topl_loc      = (x, y)
+        self.botr_loc      = (x + w, y + h)
+        self.button_text   = blit_text(text, x, y)
+        self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (x, y, w, h))
+        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (x, y, w, h), 2)
+
+    # def on_hover(self, callback()):
 
 while True:
     for event in pygame.event.get():
