@@ -15,8 +15,12 @@ except:
 # Variable Declarations
 screen = pygame.display.set_mode((1200, 800))
 clock = pygame.time.Clock()
-menu_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
+menu = {
+    "font": pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)   
+    "buttons": []
+}
 state = "MENU"
+mouse = pygame.mouse
 
 
 # Core Functions
@@ -26,11 +30,14 @@ def render_menu():
 
     :return:
     """
+    # Declare globals
+    global menu
+    
     # Background color
     screen.fill(pygame.Color(0, 150, 136))
 
     # Main Menu Buttons
-    menu_buttons = [
+    menu["buttons"] = [
         Menu_Button("Main Server", 350, 200, 500, 80),
         Menu_Button("Custom Server", 350, 300, 500, 80),
         Menu_Button("Localhost", 350, 400, 500, 80),
@@ -46,7 +53,7 @@ def blit_text(text, x, y):
     :return:
     """
 
-    text_surface = menu_font.render(text, (0, 0, 0))
+    text_surface = menu["font"].render(text, (0, 0, 0))
     screen.blit(text_surface[0], (x, y))
 
 
@@ -88,8 +95,14 @@ class Menu_Button():
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (x, y, w, h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (x, y, w, h), 2)
 
-    # def on_hover(self, callback()):
+    def on_hover(self):
+        self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (x, y, w, h))
+    
+    def off_hover(self):
+        self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (x, y, w, h))
 
+    def on_click(self):
+        
 
 def main():
     """
@@ -98,15 +111,29 @@ def main():
     * Returns nothing
     * Function completes when running becomes false
     """
+    global state
     running = True
 
     while running:
+        # Pygame event handler
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
                 break
+        
+        # Renders menu
+        if state == "MENU":
+            # Renders base menu
+            render_menu()
+            
+            # Button handler for the menu
+            for button in menu["buttons"]:
+                if button.button_fill.collidepoint(mouse.get_pos):
+                    button.on_hover()
+                else: 
+                    button.off_hover()
 
-        render_menu()
+        # Updates screen and FPS clock
         pygame.display.update()
         clock.tick(60)
         print("FPS > " + str(clock.get_fps()))
