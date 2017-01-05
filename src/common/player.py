@@ -10,3 +10,4 @@ class Player:
         self.left = False
         self.down = False
         self.right = False
+        self.heavy = False

@@ -43,49 +43,53 @@ def load_map(name):
         player.spectator = False
 
 
-@asyncio.coroutine
 def frame():
     """
     Process the physics for a frame and send the render command.
 
     :return:
     """
-    global state
-    print(state)
+    print("frame")
+    # global state
+    # print(state)
     start_time = time.time()
-    for player in state.players:
-        v_max = 20
-        if player.velocity[0] < -1 * v_max:
-            player.velocity[0] = v_max
-        if player.left and player.velocity[0] > -1 * v_max:
-            v_max_per_frame = -1
-            v_max_point = -10
-            if player.velocity[0] > 0:
-                v_change = v_max_per_frame
-            elif player.velocity[0] < v_max_point:
-                v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
-            else:
-                v_change = v_max_per_frame / 5
-            if v_change < v_max_per_frame / 10:
-                v_change = v_max_per_frame / 10
-            player.velocity += v_change
-        elif player.right and player.velocity[0] < v_max:
-            v_max_per_frame = 1
-            v_max_point = 10
-            if player.velocity[0] < 0:
-                v_change = v_max_per_frame
-            elif player.velocity[0] > v_max_point:
-                v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
-            else:
-                v_change = v_max_per_frame / 5
-            if v_change < v_max_per_frame / 10:
-                v_change = v_max_per_frame / 10
-            player.velocity += v_change
-    yield from asyncio.sleep(frame_inteval - ((time.time() - start_time) % frame_interval))
+    # for player in state.players:
+    #     v_max = 20
+    #     if player.velocity[0] < -1 * v_max:
+    #         player.velocity[0] = v_max
+    #     if player.left and player.velocity[0] > -1 * v_max:
+    #         v_max_per_frame = -1
+    #         v_max_point = -10
+    #         if player.velocity[0] > 0:
+    #             v_change = v_max_per_frame
+    #         elif player.velocity[0] < v_max_point:
+    #             v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
+    #         else:
+    #             v_change = v_max_per_frame / 5
+    #         if v_change < v_max_per_frame / 10:
+    #             v_change = v_max_per_frame / 10
+    #         player.velocity += v_change
+    #     elif player.right and player.velocity[0] < v_max:
+    #         v_max_per_frame = 1
+    #         v_max_point = 10
+    #         if player.velocity[0] < 0:
+    #             v_change = v_max_per_frame
+    #         elif player.velocity[0] > v_max_point:
+    #             v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
+    #         else:
+    #             v_change = v_max_per_frame / 5
+    #         if v_change < v_max_per_frame / 10:
+    #             v_change = v_max_per_frame / 10
+    #         player.velocity[0] += v_change
+    # time.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
+    time.sleep(1)
 
 print("INFO > Server starting")
 
 start_server = websockets.serve(process_event, 'localhost', 8080)
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().create_task(frame)
-asyncio.get_event_loop().run_forever()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(start_server)
+loop.create_task(loop.run_in_executor(None, frame))
+loop.run_forever()
+
+os.exit(0)
