@@ -18,6 +18,7 @@ clock = pygame.time.Clock()
 menu_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
 state = "MENU"
 
+
 # Core Functions
 def render_menu():
     """
@@ -28,11 +29,15 @@ def render_menu():
     # Background color
     screen.fill(pygame.Color(0, 150, 136))
 
-    # Button - Main Server
-    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
-    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
-    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
-    menu_button_1 = Menu_Button("Main Server", 350, 200, 500, 80)
+    # Main Menu Buttons
+    menu_buttons = [
+        Menu_Button("Main Server", 350, 200, 500, 80),
+        Menu_Button("Custom Server", 350, 300, 500, 80),
+        Menu_Button("Localhost", 350, 400, 500, 80),
+        Menu_Button("Help", 350, 500, 500, 80)
+    ]
+
+
 
 def blit_text(text, x, y):
     """
@@ -40,8 +45,10 @@ def blit_text(text, x, y):
 
     :return:
     """
-    text_surface = menu_font.render(text, (0, 0, 0), (0, 0, 0))
-    screen.blit(text_surface, text_surface.get_rect())
+
+    text_surface = menu_font.render(text, (0, 0, 0))
+    screen.blit(text_surface[0], (x, y))
+
 
 def reset():
     """
@@ -59,6 +66,7 @@ def reset():
             render_menu()
         else:
             break
+
 
 # Classes
 class Menu_Button():
@@ -82,15 +90,31 @@ class Menu_Button():
 
     # def on_hover(self, callback()):
 
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()
 
-    render_menu()
-    pygame.display.update()
-    clock.tick(60)
-    print("FPS > " + str(clock.get_fps()))
+def main():
+    """
+    This is the main game loop. Everything deviates from this function: Menus, the game itself, etc.
+
+    * Returns nothing
+    * Function completes when running becomes false
+    """
+    running = True
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                break
+
+        render_menu()
+        pygame.display.update()
+        clock.tick(60)
+        print("FPS > " + str(clock.get_fps()))
+
+# Runs the main loop, and exits the process when main terminates
+main()
+sys.exit()
+
 
 # async def frame():
 #     async with websockets.connect('ws://localhost:8765') as websocket:
