@@ -3,12 +3,14 @@ import asyncio
 
 async def hello():
     async with websockets.connect('ws://localhost:8080') as websocket:
+        while True:
+            name = input("What's your name? ")
+            await websocket.send(name)
+            print("> {}".format(name))
 
-        name = input("What's your name? ")
-        await websocket.send(name)
-        print("> {}".format(name))
+            greeting = await websocket.recv()
+            print("< {}".format(greeting))
+            websocket.close()
 
-        greeting = await websocket.recv()
-        print("< {}".format(greeting))
-
-asyncio.get_event_loop().run_until_complete(hello())
+asyncio.async(hello())
+asyncio.get_event_loop().run_forever()
