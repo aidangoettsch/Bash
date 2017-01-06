@@ -43,7 +43,7 @@ def load_map(name):
         player.spectator = False
 
 
-def frame():
+async def frame():
     """
     Process the physics for a frame and send the render command.
 
@@ -52,7 +52,7 @@ def frame():
     print("frame")
     # global state
     # print(state)
-    start_time = time.time()
+    # start_time = time.time()
     # for player in state.players:
     #     v_max = 20
     #     if player.velocity[0] < -1 * v_max:
@@ -82,14 +82,14 @@ def frame():
     #             v_change = v_max_per_frame / 10
     #         player.velocity[0] += v_change
     # time.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
-    time.sleep(1)
+    await asyncio.wait(1)
 
 print("INFO > Server starting")
 
 start_server = websockets.serve(process_event, 'localhost', 8080)
 loop = asyncio.get_event_loop()
 loop.run_until_complete(start_server)
-loop.create_task(loop.run_in_executor(None, frame))
-loop.run_forever()
+# task = loop.create_task(frame())
+# loop.run_forever()
 
-os.exit(0)
+quit()

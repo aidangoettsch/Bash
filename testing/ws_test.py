@@ -1,17 +1,14 @@
 import websockets
 import asyncio
 
-# Connect
-socket = websockets.connect('ws://localhost:8080')
+async def hello():
+    async with websockets.connect('ws://localhost:8080') as websocket:
 
+        name = input("What's your name? ")
+        await websocket.send(name)
+        print("> {}".format(name))
 
-async def listen():
-    res = await socket.recv()
-    print(res)
+        greeting = await websocket.recv()
+        print("< {}".format(greeting))
 
-asyncio.get_event_loop().run_until_complete(listen)
-asyncio.get_event_loop().run_forever()
-
-while True:
-    send = input("send: ")
-    socket.send(send)
+asyncio.get_event_loop().run_until_complete(hello())
