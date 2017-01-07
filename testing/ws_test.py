@@ -12,5 +12,5 @@ async def hello():
             print("< {}".format(greeting))
             websocket.close()
 
-asyncio.async(hello())
+asyncio.ensure_future(hello())
 asyncio.get_event_loop().run_forever()
