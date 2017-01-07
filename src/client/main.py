@@ -8,7 +8,6 @@ import pygame.freetype
 # Initialize and check pygame initialization
 try:
     pygame.init()
-    pygame.freetype.init()
 except:
     print("Pygame initialization failed. Check your game installation.")
     sys.exit()
@@ -33,30 +32,40 @@ def render_menu():
     """
     # Declare globals
     global menu
+    global state
 
-    # Background color
-    screen.fill(pygame.Color(0, 150, 136))
+    def on_click_connect():
+        state = "CONNECTING"
 
     # Main Menu Buttons
     menu["buttons"] = [
-        Menu_Button("Main Server", 350, 200, 500, 80),
-        Menu_Button("Custom Server", 350, 300, 500, 80),
-        Menu_Button("Localhost", 350, 400, 500, 80),
-        Menu_Button("Help", 350, 500, 500, 80)
+        Menu_Button("Main Server", 350, 200, 500, 80, on_click_connect),
+        Menu_Button("Custom Server", 350, 300, 500, 80, on_click_connect),
+        Menu_Button("Localhost", 350, 400, 500, 80, on_click_connect),
+        Menu_Button("Help", 350, 500, 500, 80, on_click_connect)
     ]
+
+
+def fill_screen():
+    """
+    Fills the background of the screen based on the state variable
+
+    """
+    if state.startswith("MENU"):
+        screen.fill((0, 150, 136))
+    elif state.startswith("GAME"):
+        screen.fill((0, 96, 100))
 
 
 def blit_text(text, x, y):
     """
     Blits text to the screen
 
-    :return: Text surfaced with text rendered on it
+    :return:
     """
-    global menu
 
-    text_surface = menu["font"].render(text, (255, 255, 255))
+    text_surface = menu["font"].render(text, (0, 0, 0))
     screen.blit(text_surface[0], (x, y))
-    return text_surface
 
 
 def reset():
@@ -85,7 +94,7 @@ class Menu_Button():
     :return:
     """
 
-    def __init__(self, text, x, y, w, h):
+    def __init__(self, text, x, y, w, h, on_click):
         self.text          = text
         self.x             = x
         self.y             = y
@@ -93,24 +102,22 @@ class Menu_Button():
         self.h             = h
         self.topl_loc      = (x, y)
         self.botr_loc      = (x + w, y + h)
-        self.button_text   = blit_text(text, x, y)
-        self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (x, y, w, h))
-        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (x, y, w, h), 2)
+        self.on_click      = on_click
+
+    def display_button(self):
+        self.button_text   = blit_text(self.text, self.x, self.y)
+        self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
+        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def on_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
-        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 2)
 
     def off_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
-        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 2)
 
-    def hide_button(self):
-        self.button_text   = None
-        self.button_fill   = None
-        self.button_border = None
-
-    # def on_click(self):
+    def on_click(self):
+        print(self.on_click)
+        self.on_click()
 
 
 def main():
@@ -120,7 +127,6 @@ def main():
     * Returns nothing
     * Function completes when running becomes false
     """
-    global mouse
     global state
     running = True
 
@@ -131,20 +137,35 @@ def main():
                 running = False
                 break
 
-        # Renders menu
-        if state == "MENU":
-            # Renders base menu
-            render_menu()
+            # Fills screen background
+            fill_screen()
 
-            # Button handler for the menu
-            for button in menu["buttons"]:
-                if button.button_fill.collidepoint(mouse.get_pos()):
-                    button.on_hover()
+            # Renders menu base
+            if state.startswith("MENU"):
+                # Renders base menu
+                render_menu()
+
+                # Main Menu Screen
+                if state == "MENU":
+                    for button in menu["buttons"]:
+                        # Renders the button
+                        button.display_button()
+
+                        # Hover and Click handler
+                        if button.button_fill.collidepoint(mouse.get_pos()):
+                            button.on_hover()
+                            if event.type == pygame.MOUSEBUTTONDOWN:
+                                print("EVENT > MOUSE DOWN")
+                                print(button.on_click)
+                                button.on_click()
+                        else:
+                            button.off_hover()
 
         # Updates screen and FPS clock
         pygame.display.update()
         clock.tick(60)
-        print("FPS > " + str(clock.get_fps()))
+        # print("FPS > " + str(clock.get_fps()))
+        # print(state)
 
 # Runs the main loop, and exits the process when main terminates
 main()
