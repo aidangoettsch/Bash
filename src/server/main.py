@@ -28,14 +28,14 @@ async def process_event(websocket, path):
         greeting = "Hello {}!".format(name)
         await websocket.send(greeting)
         print("> {}".format(greeting))
-        # event = await websocket.recv()
-        # event = json.loads(event)
-        # print(websocket, event)
-        # # if event['name'] == 'JOIN':
-        # #     player = Player(websocket, event['player_name'])
-        # #     state.players.append(player
-        # #  if event['name'] == 'MOVE':
-        # websocket.send('{}')
+    # event = await websocket.recv()
+    # event = json.loads(event)
+    # print(websocket, event)
+    # if event['name'] == 'JOIN':
+    #     player = Player(websocket, event['player_name'])
+    #     state.players.append(player)
+    # if event['name'] == 'MOVE':
+    # websocket.send('{}')
 
 
 def load_map(name):
@@ -57,11 +57,13 @@ async def frame():
 
     :return:
     """
+    state.start_time = time.time()
     while True:
+        await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
         print("frame")
         # global state
         # print(state)
-        # start_time = time.time()
+        state.start_time = time.time()
         # for player in state.players:
         #     v_max = 20
         #     if player.velocity[0] < -1 * v_max:
@@ -90,17 +92,14 @@ async def frame():
         #         if v_change < v_max_per_frame / 10:
         #             v_change = v_max_per_frame / 10
         #         player.velocity[0] += v_change
-        # time.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
 
 print("INFO > Server starting")
 
-start_server = websockets.serve(process_event, 'localhost', 8080)
+
 loop = asyncio.get_event_loop()
+start_server = websockets.serve(process_event, 'localhost', 8080)
 loop.create_task(start_server)
 loop.create_task(frame())
-try:
-    loop.run_forever()
-finally:
-    loop.close()
+loop.run_forever()
 
 quit()
