@@ -22,20 +22,57 @@ async def process_event(websocket, path):
     :return:
     """
     while True:
-        name = await websocket.recv()
-        print("< {}".format(name))
+        raw_event = await websocket.recv()
+        event = json.loads(raw_event)
+        print('WEBSOCKET < {}'.format(event) + ' FROM ' + str(websocket) + ' AT ' + str(path))
 
-        greeting = "Hello {}!".format(name)
-        await websocket.send(greeting)
-        print("> {}".format(greeting))
-    # event = await websocket.recv()
-    # event = json.loads(event)
-    # print(websocket, event)
-    # if event['name'] == 'JOIN':
-    #     player = Player(websocket, event['player_name'])
-    #     state.players.append(player)
-    # if event['name'] == 'MOVE':
-    # websocket.send('{}')
+        confirm = {
+            'name': 'ACK'
+        }
+        try:
+            if event['name'] == 'JOIN':
+                # Handle a player connecting.
+                player = Player(websocket, event['player_name'])
+                state.players[player.id] = player
+                confirm['player_id'] = player.id
+            elif event['name'] == 'KEY':
+                # Handle a player pressing or releasing a key.
+                if event['action'] == 'UP' and event['change'] == 'KEY_DOWN':
+                    player = state.players[event['player_id']]
+                    player.up = True
+                elif event['action'] == 'UP' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.up = False
+                elif event['action'] == 'DOWN' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.down = True
+                elif event['action'] == 'DOWN' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.down = False
+                elif event['action'] == 'LEFT' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.left = True
+                elif event['action'] == 'LEFT' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.left = False
+                elif event['action'] == 'RIGHT' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.right = True
+                elif event['action'] == 'RIGHT' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.right = False
+            elif event['name'] == 'CLOSE':
+                # Handle a player disconnecting.
+                websocket.close()
+                confirm['event'] = 'CLOSE'
+            else:
+                # Handle an unknown event
+                confirm['name'] = 'UNKNOWN_EVENT'
+        except KeyError:
+            confirm['name'] = 'PARSE_EXCEPTION'
+
+        await websocket.send(json.dumps(confirm))
+        print('WEBSOCKET > {}'.format(confirm))
 
 
 def load_map(name):
@@ -57,45 +94,46 @@ async def frame():
 
     :return:
     """
+    global state
     state.start_time = time.time()
     while True:
         await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
-        print("frame")
-        # global state
-        # print(state)
+        # print("frame")
+        print(json.dumps(state.__dict__))
         state.start_time = time.time()
-        # for player in state.players:
-        #     v_max = 20
-        #     if player.velocity[0] < -1 * v_max:
-        #         player.velocity[0] = v_max
-        #     if player.left and player.velocity[0] > -1 * v_max:
-        #         v_max_per_frame = -1
-        #         v_max_point = -10
-        #         if player.velocity[0] > 0:
-        #             v_change = v_max_per_frame
-        #         elif player.velocity[0] < v_max_point:
-        #             v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
-        #         else:
-        #             v_change = v_max_per_frame / 5
-        #         if v_change < v_max_per_frame / 10:
-        #             v_change = v_max_per_frame / 10
-        #         player.velocity += v_change
-        #     elif player.right and player.velocity[0] < v_max:
-        #         v_max_per_frame = 1
-        #         v_max_point = 10
-        #         if player.velocity[0] < 0:
-        #             v_change = v_max_per_frame
-        #         elif player.velocity[0] > v_max_point:
-        #             v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
-        #         else:
-        #             v_change = v_max_per_frame / 5
-        #         if v_change < v_max_per_frame / 10:
-        #             v_change = v_max_per_frame / 10
-        #         player.velocity[0] += v_change
+        for player in state.players:
+            if not player.spectator:
+                v_max = 20
+                if player.velocity[0] < -1 * v_max:
+                    player.velocity[0] = v_max
+                if player.left and player.velocity[0] > -1 * v_max:
+                    v_max_per_frame = -1
+                    v_max_point = -10
+                    if player.velocity[0] > 0:
+                        v_change = v_max_per_frame
+                    elif player.velocity[0] < v_max_point:
+                        v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
+                    else:
+                        v_change = v_max_per_frame / 5
+                    if v_change < v_max_per_frame / 10:
+                        v_change = v_max_per_frame / 10
+                    player.velocity += v_change
+                elif player.right and player.velocity[0] < v_max:
+                    v_max_per_frame = 1
+                    v_max_point = 10
+                    if player.velocity[0] < 0:
+                        v_change = v_max_per_frame
+                    elif player.velocity[0] > v_max_point:
+                        v_change = (player.velocity[0] / v_max_point) * v_max_per_frame
+                    else:
+                        v_change = v_max_per_frame / 5
+                    if v_change < v_max_per_frame / 10:
+                        v_change = v_max_per_frame / 10
+                    player.velocity[0] += v_change
 
 print("INFO > Server starting")
 
-
+# Create the event loop and queue the websocket server and game loop onto it
 loop = asyncio.get_event_loop()
 start_server = websockets.serve(process_event, 'localhost', 8080)
 loop.create_task(start_server)

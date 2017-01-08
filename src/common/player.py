@@ -1,5 +1,9 @@
-class Player:
+import uuid
+
+
+class Player(object):
     def __init__(self, socket, name):
+        self.id = uuid
         self.name = name
         self.spectator = True
         self.location = ()
