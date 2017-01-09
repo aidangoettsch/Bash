@@ -1,8 +1,9 @@
-# import asyncio
-# import websockets
+import asyncio
+import websockets
 import os
 import sys
 import pygame
+import json
 
 # Initialize and check pygame initialization
 try:
@@ -12,7 +13,9 @@ except:
     sys.exit()
 
 # Variable Declarations
-screen = pygame.display.set_mode((1200, 800))
+screen_w = 1200
+screen_h = 800
+screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
 state = "MENU"
 mouse = pygame.mouse
@@ -58,7 +61,7 @@ def render_menu():
 
     def on_click_connect_localhost():
         global state
-        state = "CONNECTING_LOCAL"
+        state = "CONNECTING_LOCALHOST"
 
     def on_click_show_help():
         global state
@@ -90,9 +93,10 @@ def blit_text(text, x, y):
 
     :return:
     """
+    global screen_h, screen_w
 
     text_surface = menu["font"].render(text, True, (0, 0, 0))
-    screen.blit(text_surface, (x, y))
+    screen.blit(text_surface, text_surface.get_rect(center=(x, y)))
 
 
 def reset():
@@ -129,6 +133,7 @@ class MenuButton():
         self.h                      = h
         self.topl_loc               = (x, y)
         self.botr_loc               = (x + w, y + h)
+        self.mid_loc                = (x + w / 2, y + h / 2)
         self.on_click_function      = on_click_function
 
     def display_button(self):
@@ -136,7 +141,7 @@ class MenuButton():
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def display_text(self):
-        self.button_text   = blit_text(self.text, self.x, self.y)
+        self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1])
 
     def on_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
@@ -196,15 +201,39 @@ def main():
                     # Renders the text
                     button.display_text()
 
-            # Connecting screen handler
-            if state.startswith("CONNECTING"):
-                shadow_overlay.set_alpha(10)
+        # Connecting screen handler
+        if state.startswith("CONNECTING"):
+            if state.startswith("CONNECTING_LOCALHOST"):
+                connection["ip"] = "127.0.0.1"
+                connection["port"] = 8080
+
+                state = "INGAME"
+
+        #
+        if state.startswith("INGAME"):
+            loop = asyncio.get_event_loop()
+            loop.create_task(frame())
+            loop.run_forever()
 
         # Updates screen and FPS clock
         pygame.display.update()
         clock.tick(60)
         # print("FPS > " + str(clock.get_fps()))
         print(state)
+
+async def frame():
+    async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
+        join_packet = {
+            "name": "testing"
+        }
+        await websocket.send(json.dumps(join_packet))
+
+        player_id = json.loads(await websocket.recv())["player_id"]
+        state = {}
+
+        while True:
+            state = json.loads(await websocket.recv())
+
 
 # Runs the main loop, and exits the process when main terminates
 main()
