@@ -1,9 +1,9 @@
-# import asyncio
-# import websockets
+import asyncio
+import websockets
 import os
 import sys
 import pygame
-import pygame.freetype
+import json
 
 # Initialize and check pygame initialization
 try:
@@ -13,13 +13,31 @@ except:
     sys.exit()
 
 # Variable Declarations
-screen = pygame.display.set_mode((1200, 800))
+screen_w = 1200
+screen_h = 800
+screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
 state = "MENU"
 mouse = pygame.mouse
+
+shadow_overlay = pygame.Surface((1200, 800), pygame.SRCALPHA, 32)
+shadow_overlay.fill((0, 0, 0, 0))
+screen.blit(shadow_overlay, (0, 0))
+
 menu = {
-    "font": pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27),
+    "font": pygame.font.Font('src/client/resources/Slabo_REG.ttf', 27),
     "buttons": []
+}
+
+default_connection = {
+    "ip": "lccnetwork.dynu.net",
+    "port": 8080
+}
+
+connection = {}
+
+events = {
+    "MOUSEDOWN": False
 }
 
 
@@ -32,17 +50,29 @@ def render_menu():
     """
     # Declare globals
     global menu
-    global state
 
-    def on_click_connect():
-        state = "CONNECTING"
+    def on_click_connect_main():
+        global state
+        state = "CONNECTING_MAIN"
+
+    def on_click_connect_custom():
+        global state
+        state = "MENU_CUSTOM"
+
+    def on_click_connect_localhost():
+        global state
+        state = "CONNECTING_LOCALHOST"
+
+    def on_click_show_help():
+        global state
+        state = "HELP"
 
     # Main Menu Buttons
     menu["buttons"] = [
-        Menu_Button("Main Server", 350, 200, 500, 80, on_click_connect),
-        Menu_Button("Custom Server", 350, 300, 500, 80, on_click_connect),
-        Menu_Button("Localhost", 350, 400, 500, 80, on_click_connect),
-        Menu_Button("Help", 350, 500, 500, 80, on_click_connect)
+        MenuButton("Main Server", 350, 200, 500, 80, on_click_connect_main),
+        MenuButton("Custom Server", 350, 300, 500, 80, on_click_connect_custom),
+        MenuButton("Localhost", 350, 400, 500, 80, on_click_connect_localhost),
+        MenuButton("Help", 350, 500, 500, 80, on_click_show_help)
     ]
 
 
@@ -53,7 +83,7 @@ def fill_screen():
     """
     if state.startswith("MENU"):
         screen.fill((0, 150, 136))
-    elif state.startswith("GAME"):
+    elif state.startswith("INGAME"):
         screen.fill((0, 96, 100))
 
 
@@ -63,9 +93,10 @@ def blit_text(text, x, y):
 
     :return:
     """
+    global screen_h, screen_w
 
-    text_surface = menu["font"].render(text, (0, 0, 0))
-    screen.blit(text_surface[0], (x, y))
+    text_surface = menu["font"].render(text, True, (0, 0, 0))
+    screen.blit(text_surface, text_surface.get_rect(center=(x, y)))
 
 
 def reset():
@@ -87,37 +118,41 @@ def reset():
 
 
 # Classes
-class Menu_Button():
+class MenuButton():
     """
     Represents a menu button
 
     :return:
     """
 
-    def __init__(self, text, x, y, w, h, on_click):
-        self.text          = text
-        self.x             = x
-        self.y             = y
-        self.w             = w
-        self.h             = h
-        self.topl_loc      = (x, y)
-        self.botr_loc      = (x + w, y + h)
-        self.on_click      = on_click
+    def __init__(self, text, x, y, w, h, on_click_function):
+        self.text                   = text
+        self.x                      = x
+        self.y                      = y
+        self.w                      = w
+        self.h                      = h
+        self.topl_loc               = (x, y)
+        self.botr_loc               = (x + w, y + h)
+        self.mid_loc                = (x + w / 2, y + h / 2)
+        self.on_click_function      = on_click_function
 
     def display_button(self):
-        self.button_text   = blit_text(self.text, self.x, self.y)
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
+    def display_text(self):
+        self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1])
+
     def on_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
+        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def off_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
+        self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def on_click(self):
-        print(self.on_click)
-        self.on_click()
+        self.on_click_function()
 
 
 def main():
@@ -127,7 +162,7 @@ def main():
     * Returns nothing
     * Function completes when running becomes false
     """
-    global state
+    global state, shadow_overlay, events
     running = True
 
     while running:
@@ -136,36 +171,74 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 break
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                events["MOUSEDOWN"] = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                events["MOUSEDOWN"] = False
 
-            # Fills screen background
-            fill_screen()
+        # Fills screen background
+        fill_screen()
 
-            # Renders menu base
-            if state.startswith("MENU"):
-                # Renders base menu
-                render_menu()
+        # Renders menu base
+        if state.startswith("MENU"):
+            # Renders base menu
+            render_menu()
 
-                # Main Menu Screen
-                if state == "MENU":
-                    for button in menu["buttons"]:
-                        # Renders the button
-                        button.display_button()
+            # Main Menu Screen
+            if state == "MENU":
+                for button in menu["buttons"]:
+                    # Renders the button
+                    button.display_button()
 
-                        # Hover and Click handler
-                        if button.button_fill.collidepoint(mouse.get_pos()):
-                            button.on_hover()
-                            if event.type == pygame.MOUSEBUTTONDOWN:
-                                print("EVENT > MOUSE DOWN")
-                                print(button.on_click)
-                                button.on_click()
-                        else:
-                            button.off_hover()
+                    # Hover and Click handler
+                    if button.button_fill.collidepoint(mouse.get_pos()):
+                        button.on_hover()
+                        if events["MOUSEDOWN"]:
+                            button.on_click()
+                    else:
+                        button.off_hover()
+
+                    # Renders the text
+                    button.display_text()
+
+        # Connecting screen handler
+        if state.startswith("CONNECTING"):
+            if state.startswith("CONNECTING_LOCALHOST"):
+                connection["ip"] = "127.0.0.1"
+                connection["port"] = 8080
+
+                state = "INGAME"
+
+        #
+        if state.startswith("INGAME"):
+            loop = asyncio.get_event_loop()
+            loop.create_task(frame())
+            loop.run_forever()
 
         # Updates screen and FPS clock
         pygame.display.update()
         clock.tick(60)
         # print("FPS > " + str(clock.get_fps()))
-        # print(state)
+        print(state)
+
+async def frame():
+    async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
+        join_packet = {
+            "name": "testing"
+        }
+        await websocket.send(json.dumps(join_packet))
+
+        player_id = json.loads(await websocket.recv())["player_id"]
+        state = {}
+
+        while True:
+            fill_screen()
+            state = json.loads(await websocket.recv())
+
+            for state["map"]
+
+
+
 
 # Runs the main loop, and exits the process when main terminates
 main()
