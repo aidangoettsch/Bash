@@ -83,7 +83,7 @@ def fill_screen():
     """
     if state.startswith("MENU"):
         screen.fill((0, 150, 136))
-    elif state.startswith("GAME"):
+    elif state.startswith("INGAME"):
         screen.fill((0, 96, 100))
 
 
@@ -232,7 +232,12 @@ async def frame():
         state = {}
 
         while True:
+            fill_screen()
             state = json.loads(await websocket.recv())
+
+            for state["map"]
+
+
 
 
 # Runs the main loop, and exits the process when main terminates
