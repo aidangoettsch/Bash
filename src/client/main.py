@@ -188,7 +188,7 @@ def main():
                     # Hover and Click handler
                     if button.button_fill.collidepoint(mouse.get_pos()):
                         button.on_hover()
-                        if event.type == pygame.MOUSEBUTTONDOWN:
+                        if events["MOUSEDOWN"]:
                             button.on_click()
                     else:
                         button.off_hover()
