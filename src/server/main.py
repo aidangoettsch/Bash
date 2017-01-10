@@ -135,7 +135,7 @@ async def frame():
                         v_change = v_max_per_frame / 10
                     player.velocity[0] += v_change
                 # Player movement
-        send_state = copy.copy(state).__dict__
+        send_state = copy.deepcopy(state).__dict__
         for player_id in state.players:
             send_state['players'][player_id] = copy.copy(state.players[player_id]).__dict__
             send_state['players'][player_id]['socket'] = copy.copy(send_state['players'][player_id]['socket'])
