@@ -83,6 +83,8 @@ def fill_screen():
     """
     if state.startswith("MENU"):
         screen.fill((0, 150, 136))
+    elif state.startswith("CONNECTING"):
+        screen.fill((0, 96, 100))
     elif state.startswith("INGAME"):
         screen.fill((0, 96, 100))
 
@@ -224,7 +226,8 @@ def main():
 async def frame():
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
         join_packet = {
-            "name": "testing"
+            "name": "JOIN",
+            "player_name": "testing"
         }
         await websocket.send(json.dumps(join_packet))
 
@@ -234,8 +237,11 @@ async def frame():
         while True:
             fill_screen()
             state = json.loads(await websocket.recv())
+            print(state)
 
-            for state["map"]
+            map_dict = state["map"]
+            for map_obj in map_dict["objects"]:
+                
 
 
 
