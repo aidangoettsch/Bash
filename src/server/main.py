@@ -7,7 +7,7 @@ import json
 import os
 import copy
 
-target_fps = 60.0
+target_fps = 1.0
 
 frame_interval = 1.0 / target_fps
 
@@ -62,6 +62,8 @@ async def process_event(websocket, path):
                 elif event['action'] == 'RIGHT' and event['change'] == 'KEY_UP':
                     player = state.players[event['player_id']]
                     player.right = False
+            elif event['name'] == 'HEARTBEAT':
+                confirm =
             elif event['name'] == 'CLOSE':
                 # Handle a player disconnecting.
                 websocket.close()
@@ -72,8 +74,9 @@ async def process_event(websocket, path):
         except KeyError:
             confirm['name'] = 'PARSE_EXCEPTION'
 
-        await websocket.send(json.dumps(confirm))
-        print('WEBSOCKET > {}'.format(confirm))
+        if send_confirm:
+            await websocket.send(json.dumps(confirm))
+            print('WEBSOCKET > {}'.format(confirm) + ' TO ' + str(websocket))
 
 
 def load_map(name):
@@ -136,14 +139,13 @@ async def frame():
                     player.velocity[0] += v_change
                 # Player movement
         send_state = copy.copy(state).__dict__
-        send_state['players'] = copy.copy(state['players']).__dict__
+        send_state['players'] = copy.copy(state.players)
         for player_id in state.players:
             send_state['players'][player_id] = copy.copy(state.players[player_id]).__dict__
-            send_state['players'][player_id]['socket'] = copy.copy(send_state['players'][player_id]['socket'])
             send_state['players'][player_id]['socket'] = None
         for player_id in state.players:
             player = state.players[player_id]
-            print(player)
+            print('WEBSOCKET > {}'.format(send_state) + ' TO ' + str(player.socket))
             player.socket.send(send_state)
 
 

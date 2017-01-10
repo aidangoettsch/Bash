@@ -2,9 +2,9 @@
   "name": "Test",
   "objects": [
     {
+      "type": "rect",
       "x": 0,
       "y": 0,
-      "type": "rect",
       "x_len": 1000,
       "y_len": 20,
       "bounce": 1.0

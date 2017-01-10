@@ -216,7 +216,7 @@ def main():
 
         # Connecting screen handler
         if state.startswith("CONNECTING"):
-            if state.startswith("CONNECTING_LOCALHOST"):
+            if state == "CONNECTING_LOCALHOST":
                 connection["ip"] = "127.0.0.1"
                 connection["port"] = 8080
 
@@ -230,11 +230,11 @@ def main():
 
         # Updates screen and FPS clock
         pygame.display.update()
-        clock.tick(60)
+        clock.tick()
         # print("FPS > " + str(clock.get_fps()))
         print(state)
 
-# Asyncronus
+# Asyncronus game loop that connects with the websocket
 async def frame():
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
         join_packet = {
@@ -242,17 +242,30 @@ async def frame():
             "player_name": "testing"
         }
         await websocket.send(json.dumps(join_packet))
+        print('WEBSOCKET > {}'.format(json.dumps(join_packet)) + ' TO ' + str(websocket))
 
-        player_id = json.loads(await websocket.recv())["player_id"]
-        state = {}
+        raw_ack = await websocket.recv()
+        print('WEBSOCKET < {}'.format(raw_ack) + ' ON ' + str(websocket))
+        player_id = json.loads(raw_ack)["player_id"]
+        websocket_state = {}
 
         while True:
             fill_screen()
-            state = json.loads(await websocket.recv())
-            print(state)
+            print("frame")
+            heartbeat = {
+                "name": "HEARTBEAT"
+            }
+            await websocket.send(json.dumps(heartbeat))
+            print('WEBSOCKET > {}'.format(json.dumps(heartbeat)) + ' TO ' + str(websocket))
+
+            websocket_state = json.loads(await websocket.recv())
+            print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
 
             # map_dict = state["map"]
             # for map_obj in map_dict["objects"]:
+            #     if map_obj.type == "rect":
+            #         pygame.draw.rect()
+
 
 
 # Runs the main loop, and exits the process when main terminates
