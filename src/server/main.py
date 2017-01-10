@@ -12,7 +12,7 @@ target_fps = 1.0
 frame_interval = 1.0 / target_fps
 
 state = State()
-
+send_state = {}
 
 async def process_event(websocket, path):
     """
@@ -63,7 +63,7 @@ async def process_event(websocket, path):
                     player = state.players[event['player_id']]
                     player.right = False
             elif event['name'] == 'HEARTBEAT':
-                confirm =
+                confirm = send_state
             elif event['name'] == 'CLOSE':
                 # Handle a player disconnecting.
                 websocket.close()
@@ -74,9 +74,8 @@ async def process_event(websocket, path):
         except KeyError:
             confirm['name'] = 'PARSE_EXCEPTION'
 
-        if send_confirm:
-            await websocket.send(json.dumps(confirm))
-            print('WEBSOCKET > {}'.format(confirm) + ' TO ' + str(websocket))
+        await websocket.send(json.dumps(confirm))
+        print('WEBSOCKET > {}'.format(confirm) + ' TO ' + str(websocket))
 
 
 def load_map(name):
@@ -99,6 +98,7 @@ async def frame():
     :return:
     """
     global state
+    global send_state
     state.start_time = time.time()
     load_map('test')
     while True:
@@ -143,10 +143,6 @@ async def frame():
         for player_id in state.players:
             send_state['players'][player_id] = copy.copy(state.players[player_id]).__dict__
             send_state['players'][player_id]['socket'] = None
-        for player_id in state.players:
-            player = state.players[player_id]
-            print('WEBSOCKET > {}'.format(send_state) + ' TO ' + str(player.socket))
-            player.socket.send(send_state)
 
 
 print("INFO > Server starting")
