@@ -3,7 +3,7 @@ import uuid
 
 class Player(object):
     def __init__(self, socket, name):
-        self.id = uuid
+        self.id = str(uuid.UUID())
         self.name = name
         self.spectator = True
         self.location = ()
