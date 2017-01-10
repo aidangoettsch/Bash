@@ -82,7 +82,7 @@ def load_map(name):
     :param name:
     :return:
     """
-    file = open(os.path.join('..', 'maps', name + '.json'))
+    file = open(os.path.join('maps', name + '.json'))
     state.map = json.loads(file.read())
     for player in state.players:
         player.spectator = False
