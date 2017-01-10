@@ -96,12 +96,14 @@ async def frame():
     """
     global state
     state.start_time = time.time()
+    load_map('test')
     while True:
         await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
         # print("frame")
         # print(json.dumps(state.__dict__))
         state.start_time = time.time()
-        for player in state.players:
+        for player_id in state.players:
+            player = state.players[player_id]
             if not player.spectator:
                 # Handle player input and velocity changes.
                 v_max = 20
@@ -132,6 +134,12 @@ async def frame():
                         v_change = v_max_per_frame / 10
                     player.velocity[0] += v_change
                 # Player movement
+        send_state = state.__dict__
+        for player_id in state.players:
+            send_state.players[player_id] = state.players[player_id].__dict__
+        for player_id in state.players:
+            player = state.players[player_id]
+            player.socket.send(send_state)
 
 
 print("INFO > Server starting")

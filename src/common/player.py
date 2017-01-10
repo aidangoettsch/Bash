@@ -8,6 +8,7 @@ class Player(object):
         self.spectator = True
         self.location = ()
         self.velocity = (0, 0)
+        self.socket = socket
 
         # Client button events
         self.up = False
