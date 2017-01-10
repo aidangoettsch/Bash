@@ -8,12 +8,6 @@
       "x_len": 1000,
       "y_len": 20,
       "bounce": 1.0
-    }, {
-      "x": 0,
-      "y": 500,
-      "type": "circle",
-      "x_radius": 200,
-      "bounce": 1.0
     }
   ],
   "spawns": [

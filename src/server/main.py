@@ -5,6 +5,7 @@ import asyncio
 import websockets
 import json
 import os
+import copy
 
 target_fps = 60.0
 
@@ -136,9 +137,12 @@ async def frame():
                 # Player movement
         send_state = state.__dict__
         for player_id in state.players:
-            send_state.players[player_id] = state.players[player_id].__dict__
+            send_state['players'][player_id] = copy.copy(state.players[player_id]).__dict__
+            send_state['players'][player_id]['socket'] = copy.copy(send_state['players'][player_id]['socket'])
+            send_state['players'][player_id]['socket'] = None
         for player_id in state.players:
             player = state.players[player_id]
+            print(player)
             player.socket.send(send_state)
 
 

@@ -243,9 +243,6 @@ async def frame():
             # for map_obj in map_dict["objects"]:
 
 
-
-
-
 # Runs the main loop, and exits the process when main terminates
 main()
 sys.exit()
