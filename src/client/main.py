@@ -239,9 +239,9 @@ async def frame():
             state = json.loads(await websocket.recv())
             print(state)
 
-            map_dict = state["map"]
-            for map_obj in map_dict["objects"]:
-                
+            # map_dict = state["map"]
+            # for map_obj in map_dict["objects"]:
+
 
 
 
