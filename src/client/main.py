@@ -17,8 +17,16 @@ screen_w = 1200
 screen_h = 800
 screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
-state = "MENU"
 mouse = pygame.mouse
+
+# States of the game
+# This variable controls the client, and what it renders
+# MENU = Main menu screen
+# CONNECTING_LOCALHOST = Connecting to localhost server
+# CONNECTING_MAIN = Connecting to the main server
+# INGAME_SPEC = In the game, but spectating
+# INGAME_PLAY = In the game and playing
+state = "MENU"
 
 shadow_overlay = pygame.Surface((1200, 800), pygame.SRCALPHA, 32)
 shadow_overlay.fill((0, 0, 0, 0))
@@ -223,6 +231,7 @@ def main():
         # print("FPS > " + str(clock.get_fps()))
         print(state)
 
+# Asyncronus
 async def frame():
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
         join_packet = {
