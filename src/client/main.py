@@ -19,13 +19,16 @@ screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
 mouse = pygame.mouse
 
+# =======================================================
 # States of the game
 # This variable controls the client, and what it renders
+# =======================================================
 # MENU = Main menu screen
 # CONNECTING_LOCALHOST = Connecting to localhost server
 # CONNECTING_MAIN = Connecting to the main server
 # INGAME_SPEC = In the game, but spectating
 # INGAME_PLAY = In the game and playing
+# =======================================================
 state = "MENU"
 
 shadow_overlay = pygame.Surface((1200, 800), pygame.SRCALPHA, 32)
