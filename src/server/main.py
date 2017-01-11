@@ -116,21 +116,36 @@ async def frame():
         for player_id in state.players:
             player = state.players[player_id]
             if not player.spectator:
-                # Check collisions
+                # Gravity
+                player.velocity[1] -= 0.05
+                # Player movement
+                player.location[0] += player.velocity[0]
+                player.location[1] += player.velocity[1]
+                # Friction
                 for obj in state.map['objects']:
                     if obj.type == 'rect':
                         if (abs(player.location[0] - obj.x) < 50 + obj.x_len) and \
                                 (abs(player.location[1] - obj.y) < obj.y_len):
+                            player.velocity[0] -= 0.5
+                # Reflection
+                for obj in state.map['objects']:
+                    if obj.type == 'rect':
+                        if (abs(player.location[0] - obj.x) < 50 + obj.x_len) and \
+                                (abs(player.location[1] - obj.y) < obj.y_len) and \
+                                (abs(player.velocity[0] > 1)):
                             player.velocity[1] *= -1
                         elif abs(player.location[1] - obj.y) < 50 + obj.y_len and \
-                                (abs(player.location[0] - obj.x) < obj.x_len):
+                                (abs(player.location[0] - obj.x) < obj.x_len) and \
+                                (abs(player.velocity[1] > 1)):
                             player.velocity[0] *= -1
                     elif obj.type == 'circle':
                         if abs(player.location[0] - obj.x) < 50 + obj.radius and \
-                                (abs(player.location[1] - obj.y) < obj.radius):
+                                (abs(player.location[1] - obj.y) < obj.radius) and \
+                                (abs(player.velocity[0] > 1)):
                             player.velocity[1] *= -1
                         if abs(player.location[1] - obj.y) < 50 + obj.radius and \
-                                (abs(player.location[0] - obj.x) < obj.radius):
+                                (abs(player.location[0] - obj.x) < obj.radius) and \
+                                (abs(player.velocity[1] > 1)):
                             player.velocity[0] *= -1
                 for uuid in state.players:
                     if not uuid == player.id:
@@ -171,10 +186,6 @@ async def frame():
                     if v_change < v_max_per_frame / 10:
                         v_change = v_max_per_frame / 10
                     player.velocity[0] += v_change
-
-                # Player movement
-                player.location[0] += player.velocity[0]
-                player.location[1] += player.velocity[1]
         send_state = copy.copy(state).__dict__
         send_state['players'] = copy.copy(state.players)
         for player_id in state.players:
