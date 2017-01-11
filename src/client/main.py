@@ -71,7 +71,7 @@ def render_menu():
 
     def on_click_connect_custom():
         global state
-        state = "MENU_CUSTOM"
+        state = "CONNECTING_CUSTOM"
 
     def on_click_connect_localhost():
         global state
@@ -98,17 +98,18 @@ def fill_screen():
     Fills the background of the screen based on the state variable, and applies shadow if necessary
 
     """
-    global menu
+    global menu, state
 
     if state.startswith("MENU"):
         screen.fill((0, 150, 136))
-    elif state.startswith("CONNECTING"):
+    if state.startswith("CONNECTING"):
         screen.fill((0, 96, 100))
-    elif state.startswith("INGAME"):
-        screen.fill((0, 96, 100))
-    elif state.startswith("HELP"):
+        menu["shadow"].opacitize(120)
+    if state.startswith("HELP"):
         screen.fill((0, 150, 136))
         menu["shadow"].opacitize(120)
+    if state.startswith("INGAME"):
+        screen.fill((0, 96, 100))
 
 
 def blit_text(text, x, y, text_size, bold=False):
@@ -261,7 +262,13 @@ def main():
                 state = "INGAME"
 
             if state == "CONNECTING_CUSTOM":
-                connection["ip"] = input("INPUT > Please input the server IP:")
+                print("test")
+                blit_text("Please open the console!", 600, 400, 72)
+                pygame.display.update()
+                connection["ip"] = input("INPUT > Please input the server IP: ")
+                connection["port"] = input("INPUT > Please input the server PORT: ")
+
+                state = "INGAME"
 
         #
         if state.startswith("INGAME"):
@@ -282,7 +289,7 @@ def main():
         pygame.display.update()
         clock.tick(60)
         # print("FPS > " + str(clock.get_fps()))
-        # print(state)
+        print(state)
 
 # Asyncronus game loop that connects with the websocket
 async def frame():
@@ -305,7 +312,6 @@ async def frame():
 
         while True:
             fill_screen()
-            print("frame")
             heartbeat = {
                 "name": "HEARTBEAT"
             }
@@ -320,13 +326,15 @@ async def frame():
             for obj in map_objects:
                 if obj["type"] == "rect":
                     pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
+                if obj["type"] == "circle":
+                    pygame.draw.circle(screen, (0, 0, 0), (obj["x"], obj["y"]), obj["radius"])
 
             for key in players:
                 player = players[key]
                 player_loc = player["location"]
 
                 if not player["spectator"]:
-                    pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 50, (255, 255, 255))
+                    pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
 
             pygame.display.update()
 
