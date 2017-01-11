@@ -3,10 +3,17 @@
   "objects": [
     {
       "type": "rect",
-      "x": 0,
-      "y": 0,
+      "x": 600,
+      "y": 500,
       "x_len": 1000,
       "y_len": 20,
+      "bounce": 1.0
+    },
+    {
+      "type": "circle",
+      "x": 600,
+      "y": 200,
+      "radius": 1000,
       "bounce": 1.0
     }
   ],

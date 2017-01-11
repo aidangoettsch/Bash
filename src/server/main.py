@@ -44,22 +44,28 @@ async def process_event(websocket, path):
                 elif event['action'] == 'UP' and event['change'] == 'KEY_UP':
                     player = state.players[event['player_id']]
                     player.up = False
-                elif event['action'] == 'DOWN' and event['change'] == 'KEY_UP':
+                elif event['action'] == 'DOWN' and event['change'] == 'KEY_DOWN':
                     player = state.players[event['player_id']]
                     player.down = True
                 elif event['action'] == 'DOWN' and event['change'] == 'KEY_UP':
                     player = state.players[event['player_id']]
                     player.down = False
-                elif event['action'] == 'LEFT' and event['change'] == 'KEY_UP':
+                elif event['action'] == 'LEFT' and event['change'] == 'KEY_DOWN':
                     player = state.players[event['player_id']]
                     player.left = True
                 elif event['action'] == 'LEFT' and event['change'] == 'KEY_UP':
                     player = state.players[event['player_id']]
                     player.left = False
-                elif event['action'] == 'RIGHT' and event['change'] == 'KEY_UP':
+                elif event['action'] == 'RIGHT' and event['change'] == 'KEY_DOWN':
                     player = state.players[event['player_id']]
                     player.right = True
                 elif event['action'] == 'RIGHT' and event['change'] == 'KEY_UP':
+                    player = state.players[event['player_id']]
+                    player.right = False
+                elif event['action'] == 'HEAVY' and event['change'] == 'KEY_DOWN':
+                    player = state.players[event['player_id']]
+                    player.right = True
+                elif event['action'] == 'HEAVY' and event['change'] == 'KEY_UP':
                     player = state.players[event['player_id']]
                     player.right = False
             elif event['name'] == 'HEARTBEAT':
@@ -109,6 +115,33 @@ async def frame():
         for player_id in state.players:
             player = state.players[player_id]
             if not player.spectator:
+                # Check collisions
+                for obj in state.map['objects']:
+                    if obj.type == 'rect':
+                        if (abs(player.location[0] - obj.x) < 50 + obj.x_len) and \
+                                (abs(player.location[1] - obj.y) < obj.y_len):
+                            player.velocity[1] *= -1
+                        elif abs(player.location[1] - obj.y) < 50 + obj.y_len and \
+                                (abs(player.location[0] - obj.x) < obj.x_len):
+                            player.velocity[0] *= -1
+                    elif obj.type == 'circle':
+                        if abs(player.location[0] - obj.x) < 50 + obj.radius and \
+                                (abs(player.location[1] - obj.y) < obj.radius):
+                            player.velocity[1] *= -1
+                        if abs(player.location[1] - obj.y) < 50 + obj.radius and \
+                                (abs(player.location[0] - obj.x) < obj.radius):
+                            player.velocity[0] *= -1
+                for uuid in state.players:
+                    if not uuid == player.id:
+                        player2 = state.players[uuid]
+                        if abs(player.location[0] - player.location[0]) < 50 + obj.radius and \
+                                (abs(player.location[1] - player.location[1]) < obj.radius):
+                            player.velocity[1] *= -1
+                            player2.velocity[1] *= -1
+                        if abs(player.location[1] - player.location[1]) < 50 + obj.radius and \
+                                (abs(player.location[0] - player.location[0]) < obj.radius):
+                            player.velocity[0] *= -1
+                            player2.velocity[0] *= -1
                 # Handle player input and velocity changes.
                 v_max = 20
                 if player.velocity[0] < -1 * v_max:
@@ -137,7 +170,10 @@ async def frame():
                     if v_change < v_max_per_frame / 10:
                         v_change = v_max_per_frame / 10
                     player.velocity[0] += v_change
+
                 # Player movement
+                player.location[0] += player.velocity[0]
+                player.location[1] += player.velocity[1]
         send_state = copy.copy(state).__dict__
         send_state['players'] = copy.copy(state.players)
         for player_id in state.players:
