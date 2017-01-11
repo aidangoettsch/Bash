@@ -7,7 +7,7 @@ import json
 import os
 import copy
 
-target_fps = 1.0
+target_fps = 60.0
 
 frame_interval = 1.0 / target_fps
 
@@ -177,9 +177,11 @@ async def frame():
                 player.location[1] += player.velocity[1]
         send_state = copy.copy(state).__dict__
         send_state['players'] = copy.copy(state.players)
+        print(send_state)
         for player_id in state.players:
             send_state['players'][player_id] = copy.copy(state.players[player_id]).__dict__
             send_state['players'][player_id]['socket'] = None
+            print(send_state["players"])
 
 
 print("INFO > Server starting")

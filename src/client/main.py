@@ -98,6 +98,9 @@ def fill_screen():
         screen.fill((0, 96, 100))
     elif state.startswith("INGAME"):
         screen.fill((0, 96, 100))
+    elif state.startswith("HELP"):
+        screen.fill((0, 150, 136))
+        alpha_rect((0, 0), (1200, 800,), (0, 0, 0), 128)
 
 
 def blit_text(text, x, y):
@@ -112,22 +115,11 @@ def blit_text(text, x, y):
     screen.blit(text_surface, text_surface.get_rect(center=(x, y)))
 
 
-def reset():
-    """
-    Reset the game state after exiting from a game or when starting the game.
-
-    Renders the portions of the client that are out of the game, such as the menu.
-    :return:
-    """
-    global state
-
-    state = "MENU"
-    while True:
-        # Clear screen
-        if state == 'MENU':
-            render_menu()
-        else:
-            break
+def alpha_rect(loc, size, color, opacity):
+    rect = pygame.Surface(size)
+    rect.set_alpha(opacity)
+    rect.fill(color)
+    screen.blit(rect, loc)
 
 
 # Classes
@@ -228,6 +220,10 @@ def main():
             loop.create_task(frame())
             loop.run_forever()
 
+        # # Help page
+        # if state.startswith("HELP"):
+        #
+
         # Updates screen and FPS clock
         pygame.display.update()
         clock.tick()
@@ -261,11 +257,20 @@ async def frame():
             websocket_state = json.loads(await websocket.recv())
             print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
 
-            # map_dict = state["map"]
-            # for map_obj in map_dict["objects"]:
-            #     if map_obj.type == "rect":
-            #         pygame.draw.rect()
+            players = websocket_state["players"]
+            map_objects = websocket_state["map"]["objects"]
+            for obj in map_objects:
+                if obj["type"] == "rect":
+                    pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
 
+            for key in players:
+                player = players[key]
+                player_loc = player["location"]
+
+                if not player["spectator"]:
+                    pygame.gfxdraw.filled_circle(screen, player_loc[0], player_loc[1], 50, (255, 255, 255))
+
+            pygame.display.update()
 
 
 # Runs the main loop, and exits the process when main terminates
