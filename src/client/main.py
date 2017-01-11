@@ -4,6 +4,7 @@ import os
 import sys
 import pygame
 import json
+import time
 
 # Initialize and check pygame initialization
 try:
@@ -18,6 +19,8 @@ screen_h = 800
 screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
 mouse = pygame.mouse
+target_fps = 60.0
+frame_interval = 1.0 / target_fps
 
 # =======================================================
 # States of the game
@@ -34,6 +37,7 @@ state = "MENU"
 shadow_overlay = pygame.Surface((1200, 800), pygame.SRCALPHA, 32)
 shadow_overlay.fill((0, 0, 0, 0))
 screen.blit(shadow_overlay, (0, 0))
+start_time = time.time()
 
 menu = {
     "font": pygame.font.Font('src/client/resources/Slabo_REG.ttf', 27),
@@ -232,7 +236,10 @@ def main():
 
 # Asyncronus game loop that connects with the websocket
 async def frame():
+    global start_time
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
+        await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
+        start_time = time.time()
         join_packet = {
             "name": "JOIN",
             "player_name": "testing"
