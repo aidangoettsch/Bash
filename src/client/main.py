@@ -4,6 +4,7 @@ import os
 import sys
 import pygame
 import pygame.freetype
+import pygame.gfxdraw
 import json
 import time
 
@@ -107,8 +108,7 @@ def fill_screen():
         screen.fill((0, 96, 100))
     elif state.startswith("HELP"):
         screen.fill((0, 150, 136))
-        if menu["shadow"].inc_opacity(128):
-            pass
+        menu["shadow"].opacitize(120)
 
 
 def blit_text(text, x, y, text_size, bold=False):
@@ -181,13 +181,21 @@ class Shadow():
         self.opacity = 0
         self.shadow  = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
-    def inc_opacity(self, opacity):
+    def inc_opacity(self, alpha):
         self.opacity += 1
         self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
-        if self.opacity >= opacity:
+        if self.opacity >= alpha:
             return True
         else:
             return False
+
+    def opacitize(self, alpha):
+        self.opacity  = alpha
+        self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
+
+    def deopacitize(self):
+        self.opacity  = 0
+        self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
     def fade_out(self, opacity):
         while self.opacity > opacity:
@@ -252,11 +260,19 @@ def main():
 
                 state = "INGAME"
 
+            if state == "CONNECTING_CUSTOM":
+                connection["ip"] = input("INPUT > Please input the server IP:")
+
         #
         if state.startswith("INGAME"):
+            # try:
             loop = asyncio.get_event_loop()
             loop.create_task(frame())
             loop.run_forever()
+            # except:
+            #     print("ERROR > Connection error has occured. Exiting to the menu...")
+            # finally:
+            #     state = "MENU"
 
         # # Help page
         # if state.startswith("HELP"):
@@ -271,6 +287,7 @@ def main():
 # Asyncronus game loop that connects with the websocket
 async def frame():
     global start_time
+    global frame_interval
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
         start_time = time.time()
         await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
@@ -309,7 +326,7 @@ async def frame():
                 player_loc = player["location"]
 
                 if not player["spectator"]:
-                    pygame.gfxdraw.filled_circle(screen, player_loc[0], player_loc[1], 50, (255, 255, 255))
+                    pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 50, (255, 255, 255))
 
             pygame.display.update()
 

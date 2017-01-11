@@ -8,8 +8,9 @@ import os
 import copy
 
 target_fps = 60.0
-
 frame_interval = 1.0 / target_fps
+gravity = 0.2
+friction = 0.02
 
 state = State()
 send_state = {}
@@ -105,8 +106,12 @@ async def frame():
     """
     global state
     global send_state
+    global gravity
+    global friction
+    global frame_interval
     state.start_time = time.time()
     # TODO: Add start round function
+    # TODO: Spawns
     load_map('test')
     while True:
         await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
@@ -117,45 +122,45 @@ async def frame():
             player = state.players[player_id]
             if not player.spectator:
                 # Gravity
-                player.velocity[1] -= 0.05
+                player.velocity[1] += gravity
                 # Player movement
                 player.location[0] += player.velocity[0]
                 player.location[1] += player.velocity[1]
                 # Friction
                 for obj in state.map['objects']:
-                    if obj.type == 'rect':
-                        if (abs(player.location[0] - obj.x) < 50 + obj.x_len) and \
-                                (abs(player.location[1] - obj.y) < obj.y_len):
-                            player.velocity[0] -= 0.5
+                    if obj['type'] == 'rect':
+                        if (abs(player.location[0] - obj['x']) < 50 + obj['x_len']) and \
+                                (abs(player.location[1] - obj['y']) < obj['y_len']):
+                            player.velocity[0] *= 1 - friction
                 # Reflection
                 for obj in state.map['objects']:
-                    if obj.type == 'rect':
-                        if (abs(player.location[0] - obj.x) < 50 + obj.x_len) and \
-                                (abs(player.location[1] - obj.y) < obj.y_len) and \
+                    if obj['type'] == 'rect':
+                        if (abs(player.location[0] - obj['x']) < 50 + obj['x_len']) and \
+                                (abs(player.location[1] - obj['y']) < obj['y_len']) and \
                                 (abs(player.velocity[0] > 1)):
                             player.velocity[1] *= -1
-                        elif abs(player.location[1] - obj.y) < 50 + obj.y_len and \
-                                (abs(player.location[0] - obj.x) < obj.x_len) and \
+                        elif abs(player.location[1] - obj['y']) < 50 + obj['y_len'] and \
+                                (abs(player.location[0] - obj['x']) < obj['x_len']) and \
                                 (abs(player.velocity[1] > 1)):
                             player.velocity[0] *= -1
-                    elif obj.type == 'circle':
-                        if abs(player.location[0] - obj.x) < 50 + obj.radius and \
-                                (abs(player.location[1] - obj.y) < obj.radius) and \
+                    elif obj['type'] == 'circle':
+                        if abs(player.location[0] - obj['x']) < 50 + obj['radius'] and \
+                                (abs(player.location[1] - obj['y']) < obj['radius']) and \
                                 (abs(player.velocity[0] > 1)):
                             player.velocity[1] *= -1
-                        if abs(player.location[1] - obj.y) < 50 + obj.radius and \
-                                (abs(player.location[0] - obj.x) < obj.radius) and \
+                        if abs(player.location[1] - obj['y']) < 50 + obj['radius'] and \
+                                (abs(player.location[0] - obj['x']) < obj['radius']) and \
                                 (abs(player.velocity[1] > 1)):
                             player.velocity[0] *= -1
                 for uuid in state.players:
                     if not uuid == player.id:
                         player2 = state.players[uuid]
-                        if abs(player.location[0] - player.location[0]) < 50 + obj.radius and \
-                                (abs(player.location[1] - player.location[1]) < obj.radius):
+                        if abs(player.location[0] - player.location[0]) < 100 and \
+                                (abs(player.location[1] - player.location[1]) < 50):
                             player.velocity[1] *= -1
                             player2.velocity[1] *= -1
-                        if abs(player.location[1] - player.location[1]) < 50 + obj.radius and \
-                                (abs(player.location[0] - player.location[0]) < obj.radius):
+                        if abs(player.location[1] - player.location[1]) < 100 and \
+                                (abs(player.location[0] - player.location[0]) < 50):
                             player.velocity[0] *= -1
                             player2.velocity[0] *= -1
                 # Handle player input and velocity changes.
