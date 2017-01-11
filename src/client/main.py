@@ -15,6 +15,9 @@ except:
     print("Pygame initialization failed. Check your game installation.")
     sys.exit()
 
+# Sets the caption of the window
+pygame.display.set_caption("BASH - Created by Aidan G. & Brian X.")
+
 # Variable Declarations
 screen_w = 1200
 screen_h = 800
@@ -133,6 +136,18 @@ def alpha_rect(loc, size, color, opacity):
     rect.set_alpha(opacity)
     rect.fill(color)
     screen.blit(rect, loc)
+
+
+def reset():
+    """
+    Reset the game state after exiting from a game or when starting the game.
+    Renders the portions of the client that are out of the game, such as the menu.
+    :return:
+    """
+    global state
+
+    state = "MENU"
+    main()
 
 
 # Classes
@@ -262,7 +277,6 @@ def main():
                 state = "INGAME"
 
             if state == "CONNECTING_CUSTOM":
-                print("test")
                 blit_text("Please open the console!", 600, 400, 72)
                 pygame.display.update()
                 connection["ip"] = input("INPUT > Please input the server IP: ")
@@ -270,20 +284,16 @@ def main():
 
                 state = "INGAME"
 
-        #
+        # Game handler
         if state.startswith("INGAME"):
-            # try:
             loop = asyncio.get_event_loop()
             loop.create_task(frame())
             loop.run_forever()
-            # except:
-            #     print("ERROR > Connection error has occured. Exiting to the menu...")
-            # finally:
-            #     state = "MENU"
+            break
 
-        # # Help page
-        # if state.startswith("HELP"):
-        #
+        # Help page
+        if state.startswith("HELP"):
+            None
 
         # Updates screen and FPS clock
         pygame.display.update()
@@ -295,71 +305,55 @@ def main():
 async def frame():
     global start_time
     global frame_interval
-    async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
-        start_time = time.time()
-        await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
-        join_packet = {
-            "name": "JOIN",
-            "player_name": "testing"
-        }
-        await websocket.send(json.dumps(join_packet))
-        print('WEBSOCKET > {}'.format(json.dumps(join_packet)) + ' TO ' + str(websocket))
-
-        raw_ack = await websocket.recv()
-        print('WEBSOCKET < {}'.format(raw_ack) + ' ON ' + str(websocket))
-        player_id = json.loads(raw_ack)["player_id"]
-        websocket_state = {}
-
-        while True:
-            fill_screen()
-            heartbeat = {
-                "name": "HEARTBEAT"
+    try:
+        async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
+            start_time = time.time()
+            await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
+            join_packet = {
+                "name": "JOIN",
+                "player_name": "testing"
             }
-            await websocket.send(json.dumps(heartbeat))
-            print('WEBSOCKET > {}'.format(json.dumps(heartbeat)) + ' TO ' + str(websocket))
+            await websocket.send(json.dumps(join_packet))
+            print('WEBSOCKET > {}'.format(json.dumps(join_packet)) + ' TO ' + str(websocket))
 
-            websocket_state = json.loads(await websocket.recv())
-            print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
+            raw_ack = await websocket.recv()
+            print('WEBSOCKET < {}'.format(raw_ack) + ' ON ' + str(websocket))
+            player_id = json.loads(raw_ack)["player_id"]
+            websocket_state = {}
 
-            players = websocket_state["players"]
-            map_objects = websocket_state["map"]["objects"]
-            for obj in map_objects:
-                if obj["type"] == "rect":
-                    pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
-                if obj["type"] == "circle":
-                    pygame.draw.circle(screen, (0, 0, 0), (obj["x"], obj["y"]), obj["radius"])
+            while True:
+                fill_screen()
+                heartbeat = {
+                    "name": "HEARTBEAT"
+                }
+                await websocket.send(json.dumps(heartbeat))
+                print('WEBSOCKET > {}'.format(json.dumps(heartbeat)) + ' TO ' + str(websocket))
 
-            for key in players:
-                player = players[key]
-                player_loc = player["location"]
+                websocket_state = json.loads(await websocket.recv())
+                print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
 
-                if not player["spectator"]:
-                    pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
+                players = websocket_state["players"]
+                map_objects = websocket_state["map"]["objects"]
+                for obj in map_objects:
+                    if obj["type"] == "rect":
+                        pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
+                    if obj["type"] == "circle":
+                        pygame.draw.circle(screen, (0, 0, 0), (obj["x"], obj["y"]), obj["radius"])
 
-            pygame.display.update()
+                for key in players:
+                    player = players[key]
+                    player_loc = player["location"]
+
+                    if not player["spectator"]:
+                        pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
+
+                pygame.display.update()
+    except:
+        print("ERROR > Connection error has occured. Exiting to the menu...")
+    finally:
+        reset()
 
 
 # Runs the main loop, and exits the process when main terminates
 main()
 sys.exit()
-
-
-# async def frame():
-#     async with websockets.connect('ws://localhost:8765') as websocket:
-#
-#         name = input("What's your name? ")
-#         await websocket.send(name)
-#         print("> {}".format(name))
-#
-#         greeting = await websocket.recv()
-#         print("< {}".format(greeting))
-#
-# asyncio.get_event_loop().run_until_complete(hello())
-#
-# # Connect
-# socket = websockets.connect('ws://localhost:8080')
-#
-# asyncio.get_event_loop().run_until_complete(start_server)
-# asyncio.get_event_loop().run_forever()
-
-# reset()
