@@ -3,6 +3,7 @@ import websockets
 import os
 import sys
 import pygame
+import pygame.freetype
 import json
 import time
 
@@ -19,7 +20,7 @@ screen_h = 800
 screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
 mouse = pygame.mouse
-target_fps = 60.0
+target_fps = 1.0
 frame_interval = 1.0 / target_fps
 
 # =======================================================
@@ -33,15 +34,12 @@ frame_interval = 1.0 / target_fps
 # INGAME_PLAY = In the game and playing
 # =======================================================
 state = "MENU"
-
-shadow_overlay = pygame.Surface((1200, 800), pygame.SRCALPHA, 32)
-shadow_overlay.fill((0, 0, 0, 0))
-screen.blit(shadow_overlay, (0, 0))
 start_time = time.time()
 
 menu = {
-    "font": pygame.font.Font('src/client/resources/Slabo_REG.ttf', 27),
-    "buttons": []
+    "font": pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27),
+    "buttons": [],
+    "shadow": None
 }
 
 default_connection = {
@@ -90,12 +88,17 @@ def render_menu():
         MenuButton("Help", 350, 500, 500, 80, on_click_show_help)
     ]
 
+    # Main Menu Shadow Overlay
+    menu["shadow"] = Shadow()
+
 
 def fill_screen():
     """
-    Fills the background of the screen based on the state variable
+    Fills the background of the screen based on the state variable, and applies shadow if necessary
 
     """
+    global menu
+
     if state.startswith("MENU"):
         screen.fill((0, 150, 136))
     elif state.startswith("CONNECTING"):
@@ -104,19 +107,24 @@ def fill_screen():
         screen.fill((0, 96, 100))
     elif state.startswith("HELP"):
         screen.fill((0, 150, 136))
-        alpha_rect((0, 0), (1200, 800,), (0, 0, 0), 128)
+        if menu["shadow"].inc_opacity(128):
+            pass
 
 
-def blit_text(text, x, y):
+def blit_text(text, x, y, text_size, bold=False):
     """
     Blits text to the screen
 
     :return:
     """
-    global screen_h, screen_w
+    global menu
 
-    text_surface = menu["font"].render(text, True, (0, 0, 0))
-    screen.blit(text_surface, text_surface.get_rect(center=(x, y)))
+    if bold:
+        text_surface = menu["font"].render(text, fgcolor=(0, 0, 0), style=pygame.freetype.STYLE_STRONG, size=text_size)
+    else:
+        text_surface = menu["font"].render(text, fgcolor=(0, 0, 0), size=text_size)
+
+    screen.blit(text_surface[0], text_surface[0].get_rect(center=(x, y)))
 
 
 def alpha_rect(loc, size, color, opacity):
@@ -150,7 +158,7 @@ class MenuButton():
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def display_text(self):
-        self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1])
+        self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1], 32, bold=True)
 
     def on_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
@@ -162,6 +170,29 @@ class MenuButton():
 
     def on_click(self):
         self.on_click_function()
+
+
+class Shadow():
+    """
+    Represents a shadow backdrop behind everything
+
+    """
+    def __init__(self):
+        self.opacity = 0
+        self.shadow  = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
+
+    def inc_opacity(self, opacity):
+        self.opacity += 1
+        self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
+        if self.opacity >= opacity:
+            return True
+        else:
+            return False
+
+    def fade_out(self, opacity):
+        while self.opacity > opacity:
+            self.opacity -= 5
+            self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
 
 def main():
@@ -199,6 +230,9 @@ def main():
                     # Renders the button
                     button.display_button()
 
+                    # Renders our game title
+                    blit_text("$bash_", 600, 100, 84, bold=True)
+
                     # Hover and Click handler
                     if button.button_fill.collidepoint(mouse.get_pos()):
                         button.on_hover()
@@ -230,16 +264,16 @@ def main():
 
         # Updates screen and FPS clock
         pygame.display.update()
-        clock.tick()
+        clock.tick(60)
         # print("FPS > " + str(clock.get_fps()))
-        print(state)
+        # print(state)
 
 # Asyncronus game loop that connects with the websocket
 async def frame():
     global start_time
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
-        await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
         start_time = time.time()
+        await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
         join_packet = {
             "name": "JOIN",
             "player_name": "testing"
