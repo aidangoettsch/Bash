@@ -28,8 +28,6 @@ mouse = pygame.mouse
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
 
-loop = asyncio.get_event_loop()
-
 # =======================================================
 # States of the game
 # This variable controls the client, and what it renders
@@ -109,15 +107,15 @@ def fill_screen():
         screen.fill((0, 150, 136))
     if state.startswith("CONNECTING"):
         screen.fill((0, 96, 100))
-        menu["shadow"].opacitize(120)
+        menu["shadow"].fade_in(120)
     if state.startswith("HELP"):
         screen.fill((0, 150, 136))
-        menu["shadow"].opacitize(120)
+        menu["shadow"].fade_in(120)
     if state.startswith("INGAME"):
         screen.fill((0, 96, 100))
 
 
-def blit_text(text, x, y, text_size, bold=False):
+def blit_text(text, x, y, color, text_size, bold=False):
     """
     Blits text to the screen
 
@@ -126,18 +124,21 @@ def blit_text(text, x, y, text_size, bold=False):
     global menu
 
     if bold:
-        text_surface = menu["font"].render(text, fgcolor=(0, 0, 0), style=pygame.freetype.STYLE_STRONG, size=text_size)
+        text_surface = menu["font"].render(text, fgcolor=color, style=pygame.freetype.STYLE_STRONG, size=text_size)
     else:
-        text_surface = menu["font"].render(text, fgcolor=(0, 0, 0), size=text_size)
+        text_surface = menu["font"].render(text, fgcolor=color, size=text_size)
 
     screen.blit(text_surface[0], text_surface[0].get_rect(center=(x, y)))
 
 
-def alpha_rect(loc, size, color, opacity):
+def alpha_rect(loc, size, color, opacity, center=False):
     rect = pygame.Surface(size)
     rect.set_alpha(opacity)
     rect.fill(color)
-    screen.blit(rect, loc)
+    if center:
+        screen.blit(rect, rect.get_rect(center=loc))
+    else:
+        screen.blit(rect, loc)
 
 
 def reset():
@@ -146,10 +147,9 @@ def reset():
     Renders the portions of the client that are out of the game, such as the menu.
     :return:
     """
-    global state, loop
+    global state
 
     state = "MENU"
-    loop.stop()
     main()
 
 
@@ -177,7 +177,7 @@ class MenuButton():
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def display_text(self):
-        self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1], 32, bold=True)
+        self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1], (0, 0, 0), 32, bold=True)
 
     def on_hover(self):
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
@@ -208,25 +208,20 @@ class Shadow():
         else:
             return False
 
-    def opacitize(self, alpha):
-        self.opacity  = alpha
+    def fade_in(self, target):
+        if self.opacity <= target:
+            self.opacity += 6
         self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
-    def deopacitize(self):
-        self.opacity  = 0
+    def fade_out(self):
+        if self.opacity >= 0:
+            self.opacity -= 6
         self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
-    def fade_in(self, opacity, duration):
-        while self.opacity <= opacity:
-            print(self.opacity, opacity)
-            self.opacity += 2
-            self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
-            pygame.display.update
 
-    def fade_out(self, opacity):
-        while self.opacity > opacity:
-            self.opacity -= 5
-            self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
+class PlayerNametag():
+    def __init__(self, name):
+        self.background = alpha_rect()
 
 
 def main():
@@ -262,7 +257,7 @@ def main():
                     button.display_button()
 
                     # Renders our game title
-                    blit_text("$bash_", 600, 100, 84, bold=True)
+                    blit_text("$bash_", 600, 100, (0, 0, 0), 84, bold=True)
 
                     # Hover and Click handler
                     if button.button_fill.collidepoint(mouse.get_pos()):
@@ -285,7 +280,7 @@ def main():
 
             if state == "CONNECTING_CUSTOM":
                 fill_screen()
-                blit_text("Please open the console!", 600, 400, 72)
+                blit_text("Please open the console!", 600, 400, (255, 255, 255), 72, bold=True)
                 pygame.display.update()
                 connection["ip"] = input("INPUT > Please input the server IP: ")
                 connection["port"] = input("INPUT > Please input the server PORT: ")
@@ -297,11 +292,7 @@ def main():
             fill_screen()
             pygame.display.update()
 
-            # TODO: Fix loop erroring
-            loop.create_task(frame())
             loop.run_forever()
-            print("done?")
-            loop.close()
 
         # Help page
         if state.startswith("HELP"):
@@ -364,19 +355,20 @@ async def frame():
                 }
 
                 for event in pygame.event.get():
-                    keys = pygame.key.get_pressed()
                     if event.type == pygame.QUIT:
                         break
-                    if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
-                        next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
-                        next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
-                        next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
-                        next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
-                        next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
+
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
+                    next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
+                if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
+                    next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
+                if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
+                    next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
+                if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
+                    next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
+                if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
+                    next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
 
                 fill_screen()
 
@@ -410,6 +402,9 @@ async def frame():
         reset()
         return
 
+# Defines async loop
+loop = asyncio.get_event_loop()
+loop.create_task(frame())
 
 # Runs the main loop, and exits the process when main terminates
 main()
