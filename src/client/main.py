@@ -28,6 +28,8 @@ mouse = pygame.mouse
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
 
+loop = asyncio.get_event_loop()
+
 # =======================================================
 # States of the game
 # This variable controls the client, and what it renders
@@ -144,9 +146,10 @@ def reset():
     Renders the portions of the client that are out of the game, such as the menu.
     :return:
     """
-    global state
+    global state, loop
 
     state = "MENU"
+    loop.stop()
     main()
 
 
@@ -220,7 +223,6 @@ class Shadow():
             self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
             pygame.display.update
 
-
     def fade_out(self, opacity):
         while self.opacity > opacity:
             self.opacity -= 5
@@ -232,17 +234,14 @@ def main():
     This is the main game loop. Everything deviates from this function: Menus, the game itself, etc.
 
     * Returns nothing
-    * Function completes when running becomes false
     """
-    global state, shadow_overlay, events
-    running = True
+    global state, shadow_overlay, events, loop
 
-    while running:
+    while True:
         # Pygame event handler
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-                break
+                sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 events["MOUSEDOWN"] = True
             elif event.type == pygame.MOUSEBUTTONUP:
@@ -285,6 +284,7 @@ def main():
                 state = "INGAME"
 
             if state == "CONNECTING_CUSTOM":
+                fill_screen()
                 blit_text("Please open the console!", 600, 400, 72)
                 pygame.display.update()
                 connection["ip"] = input("INPUT > Please input the server IP: ")
@@ -294,10 +294,14 @@ def main():
 
         # Game handler
         if state.startswith("INGAME"):
-            loop = asyncio.get_event_loop()
+            fill_screen()
+            pygame.display.update()
+
+            # TODO: Fix loop erroring
             loop.create_task(frame())
             loop.run_forever()
-            break
+            print("done?")
+            loop.close()
 
         # Help page
         if state.startswith("HELP"):
@@ -307,7 +311,7 @@ def main():
         pygame.display.update()
         clock.tick(60)
         # print("FPS > " + str(clock.get_fps()))
-        print(state)
+        # print(state)
 
 # Asyncronus game loop that connects with the websocket
 async def frame():
@@ -393,8 +397,10 @@ async def frame():
                 for key in players:
                     player = players[key]
                     player_loc = player["location"]
+                    player_name = player["name"]
 
                     if not player["spectator"]:
+                        alpha_rect((int(player_loc[0]), int(player_loc[1] - 75)), (50, 25), (0, 0, 0), 50)
                         pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
 
                 pygame.display.update()
@@ -402,6 +408,7 @@ async def frame():
         print("ERROR > Connection error has occured. Exiting to the menu...")
     finally:
         reset()
+        return
 
 
 # Runs the main loop, and exits the process when main terminates
