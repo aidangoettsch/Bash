@@ -144,7 +144,7 @@ async def frame():
                                 player.velocity[1] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
                             else:
                                 player.velocity[1] = 0
-                                player.on_ground = True
+                            player.on_ground = True
                     elif obj['type'] == 'circle':
                         if abs(player.location[0] - obj['x']) <= player_radius + obj['radius'] and \
                                 (abs(player.location[1] - obj['y']) <= obj['radius']) and \
@@ -156,10 +156,13 @@ async def frame():
                                 player.velocity[1] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
                             else:
                                 player.velocity[1] = 0
-                                player.on_ground = True
+                            player.on_ground = True
                 for uuid in state.players:
                     if not uuid == player.id:
                         player2 = state.players[uuid]
+                        if player.location == player2.location \
+                                and player.velocity == [0, 0] and player2.velocity == [0, 0]:
+                            player.velocity = [0, 1]
                         if abs(player.location[0] - player2.location[0]) <= player_radius * 2 and \
                                 (abs(player.location[1] - player2.location[1]) <= player_radius):
                             player.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
