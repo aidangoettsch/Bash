@@ -129,6 +129,7 @@ async def frame():
         state.start_time = time.time()
         for player_id in state.players:
             player = state.players[player_id]
+            print((1.5 if player.heavy else 1))
             if not player.spectator:
                 player.on_ground = False
                 # Reflection
@@ -137,11 +138,11 @@ async def frame():
                         if abs(player.location[0] - obj['x']) <= player_radius + obj['x_len'] and \
                                 (abs(player.location[1] - obj['y']) <= 0) and \
                                 (abs(player.velocity[0]) > 1):
-                            player.velocity[0] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
+                            player.velocity[0] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
                         if abs(player.location[1] - obj['y']) <= player_radius and \
                                 (abs(player.location[0] - obj['x']) <= obj['x_len']):
                             if abs(player.velocity[1]) > 1:
-                                player.velocity[1] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
+                                player.velocity[1] *= -1 * obj['bounce'] * ((1.5 if player.heavy else 1))
                             else:
                                 player.velocity[1] = 0
                             player.on_ground = True
@@ -149,29 +150,30 @@ async def frame():
                         if abs(player.location[0] - obj['x']) <= player_radius + obj['radius'] and \
                                 (abs(player.location[1] - obj['y']) <= obj['radius']) and \
                                 (abs(player.velocity[0]) > 1):
-                            player.velocity[0] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
+                            player.velocity[0] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
                         if abs(player.location[1] - obj['y']) <= player_radius + obj['radius'] and \
                                 (abs(player.location[0] - obj['x']) <= obj['radius']):
                             if abs(player.velocity[1]) > 1:
-                                player.velocity[1] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
+                                player.velocity[1] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
                             else:
                                 player.velocity[1] = 0
                             player.on_ground = True
                 for uuid in state.players:
                     if not uuid == player.id:
                         player2 = state.players[uuid]
-                        if player.location == player2.location \
-                                and player.velocity == [0, 0] and player2.velocity == [0, 0]:
-                            player.velocity = [0, 1]
-                        if abs(player.location[0] - player2.location[0]) <= player_radius * 2 and \
-                                (abs(player.location[1] - player2.location[1]) <= player_radius):
-                            player.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                            player2.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                        if abs(player.location[1] - player2.location[1]) <= player_radius * 2 and \
-                                (abs(player.location[0] - player2.location[0]) <= player_radius):
-                            player.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                            player2.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                            player.on_ground = True
+                        if not player2.spectator:
+                            if player.location == player2.location \
+                                    and player.velocity == [0, 0] and player2.velocity == [0, 0]:
+                                player.velocity = [0, 1]
+                            if abs(player.location[0] - player2.location[0]) <= player_radius * 2 and \
+                                    (abs(player.location[1] - player2.location[1]) <= player_radius):
+                                player.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                player2.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                            if abs(player.location[1] - player2.location[1]) <= player_radius * 2 and \
+                                    (abs(player.location[0] - player2.location[0]) <= player_radius):
+                                player.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                player2.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                player.on_ground = True
                 # Gravity and friction
                 if not player.on_ground:
                     player.velocity[1] += gravity
@@ -206,7 +208,8 @@ async def frame():
                         v_change = v_max_per_frame / 10
                     player.velocity[0] += v_change
                 if player.up and player.velocity[0] < v_max and player.on_ground:
-                    player.velocity[1] -= 0.5
+                    player.velocity[1] -= 5
+                    player.location[1] -= 0.1
                 if player.down and player.velocity[0] < v_max and player.on_ground:
                     player.velocity[1] += 0.1
                 # Handle death
