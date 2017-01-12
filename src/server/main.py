@@ -7,6 +7,7 @@ import json
 import os
 import copy
 import random
+import math
 
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
@@ -124,12 +125,10 @@ async def frame():
     load_map('test')
     while True:
         await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
-        # print("frame")
-        # print(json.dumps(state.__dict__))
+        # TODO: Fix collisions
         state.start_time = time.time()
         for player_id in state.players:
             player = state.players[player_id]
-            print((1.5 if player.heavy else 1))
             if not player.spectator:
                 player.on_ground = False
                 # Reflection
@@ -142,21 +141,29 @@ async def frame():
                         if abs(player.location[1] - obj['y']) <= player_radius and \
                                 (abs(player.location[0] - obj['x']) <= obj['x_len']):
                             if abs(player.velocity[1]) > 1:
-                                player.velocity[1] *= -1 * obj['bounce'] * ((1.5 if player.heavy else 1))
+                                player.velocity[1] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
                             else:
                                 player.velocity[1] = 0
                             player.on_ground = True
                     elif obj['type'] == 'circle':
-                        if abs(player.location[0] - obj['x']) <= player_radius + obj['radius'] and \
-                                (abs(player.location[1] - obj['y']) <= obj['radius']) and \
-                                (abs(player.velocity[0]) > 1):
-                            player.velocity[0] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
-                        if abs(player.location[1] - obj['y']) <= player_radius + obj['radius'] and \
-                                (abs(player.location[0] - obj['x']) <= obj['radius']):
-                            if abs(player.velocity[1]) > 1:
-                                player.velocity[1] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
-                            else:
-                                player.velocity[1] = 0
+                        # if abs(player.location[0] - obj['x']) <= player_radius + obj['radius'] and \
+                        #         (abs(player.location[1] - obj['y']) <= obj['radius']) and \
+                        #         (abs(player.velocity[0]) > 1):
+                        #     player.velocity[0] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
+                        # if abs(player.location[1] - obj['y']) <= player_radius + obj['radius'] and \
+                        #         (abs(player.location[0] - obj['x']) <= obj['radius']):
+                        #     if abs(player.velocity[1]) > 1:
+                        #         player.velocity[1] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
+                        #     else:
+                        #         player.velocity[1] = 0
+                        if math.sqrt(abs(player.location[0] - obj['x']) ** 2 + abs(player.location[1] - obj['y']) ** 2) <= player_radius + obj['radius']:
+                            # if player.velocity[0] < 1:
+                            #     player.velocity[0] = -1 * player2.velocity[0]
+                            # if player2.velocity[0] < 1:
+                            #     player2.velocity[0] = -1 * player.velocity[0]
+
+                            player.velocity[0] *= -1 * (2 if player.heavy else 1.5)
+                            player.velocity[1] *= -1 * (2 if player.heavy else 1.5)
                             player.on_ground = True
                 for uuid in state.players:
                     if not uuid == player.id:
@@ -165,15 +172,21 @@ async def frame():
                             if player.location == player2.location \
                                     and player.velocity == [0, 0] and player2.velocity == [0, 0]:
                                 player.velocity = [0, 1]
-                            if abs(player.location[0] - player2.location[0]) <= player_radius * 2 and \
-                                    (abs(player.location[1] - player2.location[1]) <= player_radius):
-                                player.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                                player2.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                            if abs(player.location[1] - player2.location[1]) <= player_radius * 2 and \
-                                    (abs(player.location[0] - player2.location[0]) <= player_radius):
-                                player.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                                player2.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
-                                player.on_ground = True
+                                player.location[0] += 100
+                            elif math.sqrt(abs(player.location[0] - player2.location[0]) ** 2 + abs(player.location[1] - player2.location[1]) ** 2) <= player_radius * 2:
+                                if player.velocity[0] < 1:
+                                    player.velocity[0] = -1 * player2.velocity[0] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                if player2.velocity[0] < 1:
+                                    player2.velocity[0] = -1 * player.velocity[0] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                if player.velocity[1] < 1 and not player.on_ground:
+                                    player.velocity[1] = -1 * player2.velocity[1] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                if player2.velocity[1] < 1 and not player2.on_ground:
+                                    player2.velocity[1] = -1 * player.velocity[1] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+
+                                player.velocity[0] *= -1
+                                player.velocity[1] *= -1
+                                player2.velocity[0] *= -1
+                                player2.velocity[1] *= -1
                 # Gravity and friction
                 if not player.on_ground:
                     player.velocity[1] += gravity
