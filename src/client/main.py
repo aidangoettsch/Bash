@@ -35,8 +35,7 @@ frame_interval = 1.0 / target_fps
 # MENU = Main menu screen
 # CONNECTING_LOCALHOST = Connecting to localhost server
 # CONNECTING_MAIN = Connecting to the main server
-# INGAME_SPEC = In the game, but spectating
-# INGAME_PLAY = In the game and playing
+# INGAME = In the game
 # =======================================================
 state = "MENU"
 start_time = time.time()
@@ -214,6 +213,14 @@ class Shadow():
         self.opacity  = 0
         self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
+    def fade_in(self, opacity, duration):
+        while self.opacity <= opacity:
+            print(self.opacity, opacity)
+            self.opacity += 2
+            self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
+            pygame.display.update
+
+
     def fade_out(self, opacity):
         while self.opacity > opacity:
             self.opacity -= 5
@@ -325,10 +332,6 @@ async def frame():
             while True:
                 await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
 
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        break
-
                 next_heartbeat = {
                     'name': 'KEY',
                     'player_id': player_id,
@@ -355,17 +358,21 @@ async def frame():
                         }
                     ]
                 }
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
-                    next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
-                    next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
-                    next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
-                    next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
-                    next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
+
+                for event in pygame.event.get():
+                    keys = pygame.key.get_pressed()
+                    if event.type == pygame.QUIT:
+                        break
+                    if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
+                        next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
+                        next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
+                        next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
+                        next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
+                        next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
 
                 fill_screen()
 
