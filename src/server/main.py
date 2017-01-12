@@ -6,6 +6,7 @@ import websockets
 import json
 import os
 import copy
+import random
 
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
@@ -30,7 +31,7 @@ async def process_event(websocket, path):
         # print('WEBSOCKET < {}'.format(event) + ' FROM ' + str(websocket) + ' AT ' + str(path))
 
         confirm = {
-            'name': 'ACK'
+            'name': ''
         }
         try:
             if event['name'] == 'JOIN':
@@ -38,44 +39,49 @@ async def process_event(websocket, path):
                 player = Player(websocket, event['player_name'])
                 state.players[player.id] = player
                 confirm['player_id'] = player.id
+                if len(state.players) == 1:
+                    load_map('test')
             elif event['name'] == 'KEY':
                 # Handle a player pressing or releasing a key.
-                if event['action'] == 'UP' and event['change'] == 'KEY_DOWN':
-                    player = state.players[event['player_id']]
-                    player.up = True
-                elif event['action'] == 'UP' and event['change'] == 'KEY_UP':
-                    player = state.players[event['player_id']]
-                    player.up = False
-                elif event['action'] == 'DOWN' and event['change'] == 'KEY_DOWN':
-                    player = state.players[event['player_id']]
-                    player.down = True
-                elif event['action'] == 'DOWN' and event['change'] == 'KEY_UP':
-                    player = state.players[event['player_id']]
-                    player.down = False
-                elif event['action'] == 'LEFT' and event['change'] == 'KEY_DOWN':
-                    player = state.players[event['player_id']]
-                    player.left = True
-                elif event['action'] == 'LEFT' and event['change'] == 'KEY_UP':
-                    player = state.players[event['player_id']]
-                    player.left = False
-                elif event['action'] == 'RIGHT' and event['change'] == 'KEY_DOWN':
-                    player = state.players[event['player_id']]
-                    player.right = True
-                elif event['action'] == 'RIGHT' and event['change'] == 'KEY_UP':
-                    player = state.players[event['player_id']]
-                    player.right = False
-                elif event['action'] == 'HEAVY' and event['change'] == 'KEY_DOWN':
-                    player = state.players[event['player_id']]
-                    player.right = True
-                elif event['action'] == 'HEAVY' and event['change'] == 'KEY_UP':
-                    player = state.players[event['player_id']]
-                    player.right = False
+                for key in event['keys']:
+                    if key['action'] == 'UP' and key['change'] == 'KEY_DOWN':
+                        player = state.players[event['player_id']]
+                        player.up = True
+                    elif key['action'] == 'UP' and key['change'] == 'KEY_UP':
+                        player = state.players[event['player_id']]
+                        player.up = False
+                    elif key['action'] == 'DOWN' and key['change'] == 'KEY_DOWN':
+                        player = state.players[event['player_id']]
+                        player.down = True
+                    elif key['action'] == 'DOWN' and key['change'] == 'KEY_UP':
+                        player = state.players[event['player_id']]
+                        player.down = False
+                    elif key['action'] == 'LEFT' and key['change'] == 'KEY_DOWN':
+                        player = state.players[event['player_id']]
+                        player.left = True
+                    elif key['action'] == 'LEFT' and key['change'] == 'KEY_UP':
+                        player = state.players[event['player_id']]
+                        player.left = False
+                    elif key['action'] == 'RIGHT' and key['change'] == 'KEY_DOWN':
+                        player = state.players[event['player_id']]
+                        player.right = True
+                    elif key['action'] == 'RIGHT' and key['change'] == 'KEY_UP':
+                        player = state.players[event['player_id']]
+                        player.right = False
+                    elif key['action'] == 'HEAVY' and key['change'] == 'KEY_DOWN':
+                        player = state.players[event['player_id']]
+                        player.heavy = True
+                    elif key['action'] == 'HEAVY' and key['change'] == 'KEY_UP':
+                        player = state.players[event['player_id']]
+                        player.heavy = False
+                confirm = send_state
             elif event['name'] == 'HEARTBEAT':
                 confirm = send_state
             elif event['name'] == 'CLOSE':
                 # Handle a player disconnecting.
                 websocket.close()
                 confirm['event'] = 'CLOSE'
+                confirm = send_state
             else:
                 # Handle an unknown event
                 confirm['name'] = 'UNKNOWN_EVENT'
@@ -96,7 +102,11 @@ def load_map(name):
     file = open(os.path.join('maps', name + '.json'))
     state.map = json.loads(file.read())
     for player in state.players:
+        player = state.players[player]
         player.spectator = False
+        spawn = state.map['spawns'][random.randint(0, len(state.map['spawns']) - 1)]
+        player.location = [spawn['x'], spawn['y']]
+        player.velocity = [0, 0]
 
 
 async def frame():
@@ -111,8 +121,6 @@ async def frame():
     global friction
     global frame_interval
     state.start_time = time.time()
-    # TODO: Add start round function
-    # TODO: Spawns
     load_map('test')
     while True:
         await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
@@ -122,46 +130,50 @@ async def frame():
         for player_id in state.players:
             player = state.players[player_id]
             if not player.spectator:
-                # Gravity
-                player.velocity[1] += gravity
-                # Player movement
-                player.location[0] += player.velocity[0]
-                player.location[1] += player.velocity[1]
-                # Friction
-                for obj in state.map['objects']:
-                    if obj['type'] == 'rect':
-                        if (abs(player.location[0] - obj['x']) < player_radius + obj['x_len']) and \
-                                (abs(player.location[1] - obj['y']) < 0):
-                            player.velocity[0] *= 1 - friction
+                player.on_ground = False
                 # Reflection
                 for obj in state.map['objects']:
                     if obj['type'] == 'rect':
                         if abs(player.location[0] - obj['x']) <= player_radius + obj['x_len'] and \
                                 (abs(player.location[1] - obj['y']) <= 0) and \
                                 (abs(player.velocity[0]) > 1):
-                            player.velocity[0] *= -1 * obj['bounce']
+                            player.velocity[0] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
                         if abs(player.location[1] - obj['y']) <= player_radius and \
-                                (abs(player.location[0] - obj['x']) <= obj['x_len']) and \
-                                (abs(player.velocity[1]) > 1):
-                            player.velocity[1] *= -1 * obj['bounce']
+                                (abs(player.location[0] - obj['x']) <= obj['x_len']):
+                            if abs(player.velocity[1]) > 1:
+                                player.velocity[1] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
+                            else:
+                                player.velocity[1] = 0
+                                player.on_ground = True
                     elif obj['type'] == 'circle':
                         if abs(player.location[0] - obj['x']) <= player_radius + obj['radius'] and \
                                 (abs(player.location[1] - obj['y']) <= obj['radius']) and \
                                 (abs(player.velocity[0]) > 1):
-                            player.velocity[0] *= -1 * obj['bounce']
+                            player.velocity[0] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
                         if abs(player.location[1] - obj['y']) <= player_radius + obj['radius'] and \
-                                (abs(player.location[0] - obj['x']) <= obj['radius']) and \
-                                (abs(player.velocity[1]) > 1):
-                            player.velocity[1] *= -1 * obj['bounce']
+                                (abs(player.location[0] - obj['x']) <= obj['radius']):
+                            if abs(player.velocity[1]) > 1:
+                                player.velocity[1] *= -1 * obj['bounce'] * 1.5 if player.heavy else 1
+                            else:
+                                player.velocity[1] = 0
+                                player.on_ground = True
                 for uuid in state.players:
                     if not uuid == player.id:
                         player2 = state.players[uuid]
-                        if abs(player.location[0] - obj['x']) <= player_radius * 2 and \
-                                (abs(player.location[1] - obj['y']) <= player_radius):
-                            player.velocity[0] *= -1 * obj['bounce']
-                        if abs(player.location[1] - obj['y']) <= player_radius * 2 and \
-                                (abs(player.location[0] - obj['x']) <= player_radius):
-                            player.velocity[1] *= -1 * obj['bounce']
+                        if abs(player.location[0] - player2.location[0]) <= player_radius * 2 and \
+                                (abs(player.location[1] - player2.location[1]) <= player_radius):
+                            player.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                            player2.velocity[0] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                        if abs(player.location[1] - player2.location[1]) <= player_radius * 2 and \
+                                (abs(player.location[0] - player2.location[0]) <= player_radius):
+                            player.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                            player2.velocity[1] *= -1 * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                            player.on_ground = True
+                # Gravity and friction
+                if not player.on_ground:
+                    player.velocity[1] += gravity
+                else:
+                    player.velocity[0] *= 1 - friction
                 # Handle player input and velocity changes.
                 v_max = 20
                 if player.velocity[0] < -1 * v_max:
@@ -177,8 +189,8 @@ async def frame():
                         v_change = v_max_per_frame / 5
                     if v_change < v_max_per_frame / 10:
                         v_change = v_max_per_frame / 10
-                    player.velocity += v_change
-                elif player.right and player.velocity[0] < v_max:
+                    player.velocity[0] += v_change
+                if player.right and player.velocity[0] < v_max:
                     v_max_per_frame = 1
                     v_max_point = 10
                     if player.velocity[0] < 0:
@@ -190,6 +202,24 @@ async def frame():
                     if v_change < v_max_per_frame / 10:
                         v_change = v_max_per_frame / 10
                     player.velocity[0] += v_change
+                if player.up and player.velocity[0] < v_max and player.on_ground:
+                    player.velocity[1] -= 0.5
+                if player.down and player.velocity[0] < v_max and player.on_ground:
+                    player.velocity[1] += 0.1
+                # Handle death
+                if player.location[0] < -200 or player.location[0] > 1400 \
+                        or player.location[1] < -200 or player.location[1] > 900:
+                    player.spectator = True
+                # Move player
+                player.location[0] += player.velocity[0]
+                player.location[1] += player.velocity[1]
+        all_dead = True
+        for player_id in state.players:
+            if not state.players[player_id].spectator:
+                all_dead = False
+        if all_dead:
+            load_map('test')
+        # Prepare websocket state
         send_state = copy.copy(state).__dict__
         send_state['players'] = copy.copy(state.players)
         for player_id in state.players:

@@ -7,6 +7,7 @@ import pygame.freetype
 import pygame.gfxdraw
 import json
 import time
+import copy
 
 # Initialize and check pygame initialization
 try:
@@ -21,7 +22,7 @@ screen_h = 800
 screen = pygame.display.set_mode((screen_w, screen_h))
 clock = pygame.time.Clock()
 mouse = pygame.mouse
-target_fps = 1.0
+target_fps = 60.0
 frame_interval = 1.0 / target_fps
 
 # =======================================================
@@ -297,7 +298,6 @@ async def frame():
     global frame_interval
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
         start_time = time.time()
-        await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
         join_packet = {
             "name": "JOIN",
             "player_name": "testing"
@@ -309,14 +309,57 @@ async def frame():
         print('WEBSOCKET < {}'.format(raw_ack) + ' ON ' + str(websocket))
         player_id = json.loads(raw_ack)["player_id"]
         websocket_state = {}
+        next_heartbeat = {}
 
         while True:
-            fill_screen()
-            heartbeat = {
-                "name": "HEARTBEAT"
+            await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    break
+
+            next_heartbeat = {
+                'name': 'KEY',
+                'player_id': player_id,
+                'keys': [
+                    {
+                        'action': 'UP',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'DOWN',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'LEFT',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'RIGHT',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'HEAVY',
+                        'change': 'KEY_UP'
+                    }
+                ]
             }
-            await websocket.send(json.dumps(heartbeat))
-            print('WEBSOCKET > {}'.format(json.dumps(heartbeat)) + ' TO ' + str(websocket))
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
+                next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
+                next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
+                next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
+                next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
+                next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
+
+            fill_screen()
+
+            await websocket.send(json.dumps(next_heartbeat))
+            print('WEBSOCKET > {}'.format(json.dumps(next_heartbeat)) + ' TO ' + str(websocket))
 
             websocket_state = json.loads(await websocket.recv())
             print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
