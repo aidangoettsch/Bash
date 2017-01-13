@@ -125,7 +125,7 @@ async def frame():
     state.start_time = time.time()
     load_map('test')
     while True:
-        await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))\
+        await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
         state.start_time = time.time()
         for player_id in state.players:
             player = state.players[player_id]
