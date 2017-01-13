@@ -40,8 +40,9 @@ frame_interval = 1.0 / target_fps
 state = "MENU"
 start_time = time.time()
 
+def_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
+
 menu = {
-    "font": pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27),
     "buttons": [],
     "shadow": None
 }
@@ -124,11 +125,12 @@ def blit_text(text, x, y, color, text_size, bold=False):
     global menu
 
     if bold:
-        text_surface = menu["font"].render(text, fgcolor=color, style=pygame.freetype.STYLE_STRONG, size=text_size)
+        text_surface = def_font.render(text, fgcolor=color, style=pygame.freetype.STYLE_STRONG, size=text_size)
     else:
-        text_surface = menu["font"].render(text, fgcolor=color, size=text_size)
+        text_surface = def_font.render(text, fgcolor=color, size=text_size)
 
     screen.blit(text_surface[0], text_surface[0].get_rect(center=(x, y)))
+    return text_surface
 
 
 def alpha_rect(loc, size, color, opacity, center=False):
@@ -139,6 +141,12 @@ def alpha_rect(loc, size, color, opacity, center=False):
         screen.blit(rect, rect.get_rect(center=loc))
     else:
         screen.blit(rect, loc)
+
+
+def player_tag(name, loc):
+    tag_surface = blit_text(name, int(loc[0]), int(loc[1] - 50), (255, 255, 255), 12)
+    tag_rect = tag_surface[0].get_rect(center=loc)
+    alpha_rect((int(loc[0]), int(loc[1] - 50)), (tag_rect[2] + 20, tag_rect[3] + 15), (0, 0, 0), 50, center=True)
 
 
 def reset():
@@ -200,14 +208,6 @@ class Shadow():
         self.opacity = 0
         self.shadow  = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
-    def inc_opacity(self, alpha):
-        self.opacity += 1
-        self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
-        if self.opacity >= alpha:
-            return True
-        else:
-            return False
-
     def fade_in(self, target):
         if self.opacity <= target:
             self.opacity += 6
@@ -217,11 +217,6 @@ class Shadow():
         if self.opacity >= 0:
             self.opacity -= 6
         self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
-
-
-class PlayerNametag():
-    def __init__(self, name):
-        self.background = alpha_rect()
 
 
 def main():
@@ -272,6 +267,12 @@ def main():
 
         # Connecting screen handler
         if state.startswith("CONNECTING"):
+            if state == "CONNECTING_MAIN":
+                connection["ip"] = "lccnetwork.dynu.net"
+                connection["port"] = 8080
+
+                state = "INGAME"
+
             if state == "CONNECTING_LOCALHOST":
                 connection["ip"] = "127.0.0.1"
                 connection["port"] = 8080
@@ -357,7 +358,7 @@ async def frame():
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    break
+                    sys.exit()
 
             keys = pygame.key.get_pressed()
             if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
@@ -395,9 +396,10 @@ async def frame():
                 player_heavy = player["heavy"]
 
                 if not player["spectator"]:
-                    alpha_rect((int(player_loc[0]), int(player_loc[1] - 75)), (50, 25), (0, 0, 0), 50)
                     pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
                     pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
+
+                    player_tag(player_name, player_loc)
                     if player_heavy:
                         pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
                         pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
