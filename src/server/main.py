@@ -125,8 +125,7 @@ async def frame():
     state.start_time = time.time()
     load_map('test')
     while True:
-        await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
-        # TODO: Fix collisions
+        await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))\
         state.start_time = time.time()
         for player_id in state.players:
             player = state.players[player_id]
@@ -147,22 +146,7 @@ async def frame():
                                 player.velocity[1] = 0
                             player.on_ground = True
                     elif obj['type'] == 'circle':
-                        # if abs(player.location[0] - obj['x']) <= player_radius + obj['radius'] and \
-                        #         (abs(player.location[1] - obj['y']) <= obj['radius']) and \
-                        #         (abs(player.velocity[0]) > 1):
-                        #     player.velocity[0] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
-                        # if abs(player.location[1] - obj['y']) <= player_radius + obj['radius'] and \
-                        #         (abs(player.location[0] - obj['x']) <= obj['radius']):
-                        #     if abs(player.velocity[1]) > 1:
-                        #         player.velocity[1] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)
-                        #     else:
-                        #         player.velocity[1] = 0
                         if math.sqrt(abs(player.location[0] - obj['x']) ** 2 + abs(player.location[1] - obj['y']) ** 2) <= player_radius + obj['radius']:
-                            # if player.velocity[0] < 1:
-                            #     player.velocity[0] = -1 * player2.velocity[0]
-                            # if player2.velocity[0] < 1:
-                            #     player2.velocity[0] = -1 * player.velocity[0]
-
                             player.velocity[0] *= -1 * (2 if player.heavy else 1.5)
                             player.velocity[1] *= -1 * (2 if player.heavy else 1.5)
                             player.on_ground = True
