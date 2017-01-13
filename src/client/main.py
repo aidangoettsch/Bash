@@ -308,99 +308,105 @@ def main():
 async def frame():
     global start_time
     global frame_interval
-    try:
-        async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
-            start_time = time.time()
-            join_packet = {
-                "name": "JOIN",
-                "player_name": "testing"
+    # try:
+    async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
+        start_time = time.time()
+        join_packet = {
+            "name": "JOIN",
+            "player_name": "testing",
+            "color": [0, 0, 0]
+        }
+        await websocket.send(json.dumps(join_packet))
+        print('WEBSOCKET > {}'.format(json.dumps(join_packet)) + ' TO ' + str(websocket))
+
+        raw_ack = await websocket.recv()
+        print('WEBSOCKET < {}'.format(raw_ack) + ' ON ' + str(websocket))
+        player_id = json.loads(raw_ack)["player_id"]
+        websocket_state = {}
+        next_heartbeat = {}
+
+        while True:
+            await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
+
+            next_heartbeat = {
+                'name': 'KEY',
+                'player_id': player_id,
+                'keys': [
+                    {
+                        'action': 'UP',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'DOWN',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'LEFT',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'RIGHT',
+                        'change': 'KEY_UP'
+                    },
+                    {
+                        'action': 'HEAVY',
+                        'change': 'KEY_UP'
+                    }
+                ]
             }
-            await websocket.send(json.dumps(join_packet))
-            print('WEBSOCKET > {}'.format(json.dumps(join_packet)) + ' TO ' + str(websocket))
 
-            raw_ack = await websocket.recv()
-            print('WEBSOCKET < {}'.format(raw_ack) + ' ON ' + str(websocket))
-            player_id = json.loads(raw_ack)["player_id"]
-            websocket_state = {}
-            next_heartbeat = {}
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    break
 
-            while True:
-                await asyncio.sleep(frame_interval - ((time.time() - start_time) % frame_interval))
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
+                next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
+                next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
+                next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
+                next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
+                next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
 
-                next_heartbeat = {
-                    'name': 'KEY',
-                    'player_id': player_id,
-                    'keys': [
-                        {
-                            'action': 'UP',
-                            'change': 'KEY_UP'
-                        },
-                        {
-                            'action': 'DOWN',
-                            'change': 'KEY_UP'
-                        },
-                        {
-                            'action': 'LEFT',
-                            'change': 'KEY_UP'
-                        },
-                        {
-                            'action': 'RIGHT',
-                            'change': 'KEY_UP'
-                        },
-                        {
-                            'action': 'HEAVY',
-                            'change': 'KEY_UP'
-                        }
-                    ]
-                }
+            fill_screen()
 
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        break
+            await websocket.send(json.dumps(next_heartbeat))
+            print('WEBSOCKET > {}'.format(json.dumps(next_heartbeat)) + ' TO ' + str(websocket))
 
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
-                    next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
-                    next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
-                    next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
-                    next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
-                if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
-                    next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
+            websocket_state = json.loads(await websocket.recv())
+            print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
 
-                fill_screen()
+            players = websocket_state["players"]
+            map_objects = websocket_state["map"]["objects"]
+            for obj in map_objects:
+                if obj["type"] == "rect":
+                    pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
+                if obj["type"] == "circle":
+                    pygame.gfxdraw.filled_circle(screen, obj["x"], obj["y"], obj["radius"], (0, 0, 0))
 
-                await websocket.send(json.dumps(next_heartbeat))
-                print('WEBSOCKET > {}'.format(json.dumps(next_heartbeat)) + ' TO ' + str(websocket))
+            for key in players:
+                player = players[key]
+                player_loc = player["location"]
+                player_color = player["color"]
+                player_name = player["name"]
+                player_heavy = player["heavy"]
 
-                websocket_state = json.loads(await websocket.recv())
-                print('WEBSOCKET < {}'.format(websocket_state) + ' ON ' + str(websocket))
-
-                players = websocket_state["players"]
-                map_objects = websocket_state["map"]["objects"]
-                for obj in map_objects:
-                    if obj["type"] == "rect":
-                        pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
-                    if obj["type"] == "circle":
-                        pygame.draw.circle(screen, (0, 0, 0), (obj["x"], obj["y"]), obj["radius"])
-
-                for key in players:
-                    player = players[key]
-                    player_loc = player["location"]
-                    player_name = player["name"]
-
-                    if not player["spectator"]:
-                        alpha_rect((int(player_loc[0]), int(player_loc[1] - 75)), (50, 25), (0, 0, 0), 50)
+                if not player["spectator"]:
+                    alpha_rect((int(player_loc[0]), int(player_loc[1] - 75)), (50, 25), (0, 0, 0), 50)
+                    pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
+                    pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
+                    if player_heavy:
                         pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
+                        pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 25, (255, 255, 255))
+                        pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 23, (player_color[0], player_color[1], player_color[2]))
+                        pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 23, (player_color[0], player_color[1], player_color[2]))
 
-                pygame.display.update()
-    except:
-        print("ERROR > Connection error has occured. Exiting to the menu...")
-    finally:
-        reset()
-        return
+            pygame.display.update()
+    reset()
+    return
 
 # Defines async loop
 loop = asyncio.get_event_loop()
