@@ -219,6 +219,26 @@ class Shadow():
         self.shadow   = alpha_rect((0, 0), (1200, 800,), (0, 0, 0), self.opacity)
 
 
+class TextBox():
+    def __init__(self, x, y, w, h):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+
+    def display(self):
+        self.box_fill = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
+        self.box_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
+
+    def on_hover(self):
+        self.box_fill = pygame.draw.rect(screen, (67, 190, 187), (self.x, self.y, self.w, self.h))
+
+    def on_click(self):
+        self.box_fill = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
+
+
+
+
 def main():
     """
     This is the main game loop. Everything deviates from this function: Menus, the game itself, etc.
