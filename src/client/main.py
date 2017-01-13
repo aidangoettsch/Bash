@@ -356,6 +356,18 @@ async def frame():
                 ]
             }
 
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
+                next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
+                next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
+                next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
+                next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
+            if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
+                next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
@@ -384,18 +396,6 @@ async def frame():
                 player_heavy = player["heavy"]
 
                 if not player["spectator"]:
-                    keys = pygame.key.get_pressed()
-                    if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
-                        next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
-                        next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
-                        next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
-                        next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
-                    if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
-                        next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
-
                     pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
                     pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
 
