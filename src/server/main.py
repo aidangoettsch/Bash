@@ -134,7 +134,7 @@ async def frame():
                 # Reflection
                 for obj in state.map['objects']:
                     if obj['type'] == 'rect':
-                        if abs(player.location[0] - obj['x']) <= player_radius + obj['x_len'] and \
+                        if player.location[0] - obj['x'] <= player_radius + obj['x_len'] and \
                                 (abs(player.location[1] - obj['y']) <= 0) and \
                                 (abs(player.velocity[0]) > 1):
                             player.velocity[0] *= -1 * obj['bounce'] * (1.5 if player.heavy else 1)

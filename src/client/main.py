@@ -360,18 +360,6 @@ async def frame():
                 if event.type == pygame.QUIT:
                     sys.exit()
 
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
-                next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
-            if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
-                next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
-            if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
-                next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
-            if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
-                next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
-            if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
-                next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
-
             fill_screen()
 
             await websocket.send(json.dumps(next_heartbeat))
@@ -384,9 +372,9 @@ async def frame():
             map_objects = websocket_state["map"]["objects"]
             for obj in map_objects:
                 if obj["type"] == "rect":
-                    pygame.draw.rect(screen, (0, 0, 0), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
+                    pygame.draw.rect(screen, (obj["fill"][0], obj["fill"][1], obj["fill"][2]), (obj["x"], obj["y"], obj["x_len"], obj["y_len"]))
                 if obj["type"] == "circle":
-                    pygame.gfxdraw.filled_circle(screen, obj["x"], obj["y"], obj["radius"], (0, 0, 0))
+                    pygame.gfxdraw.filled_circle(screen, obj["x"], obj["y"], obj["radius"], (obj["fill"][0], obj["fill"][1], obj["fill"][2]))
 
             for key in players:
                 player = players[key]
@@ -396,6 +384,18 @@ async def frame():
                 player_heavy = player["heavy"]
 
                 if not player["spectator"]:
+                    keys = pygame.key.get_pressed()
+                    if keys[pygame.K_UP] != 0 or keys[pygame.K_w] != 0:
+                        next_heartbeat['keys'][0]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_DOWN] != 0 or keys[pygame.K_d] != 0:
+                        next_heartbeat['keys'][1]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_LEFT] != 0 or keys[pygame.K_a] != 0:
+                        next_heartbeat['keys'][2]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_RIGHT] != 0 or keys[pygame.K_d] != 0:
+                        next_heartbeat['keys'][3]['change'] = 'KEY_DOWN'
+                    if keys[pygame.K_SPACE] != 0 or keys[pygame.K_x] != 0 or keys[pygame.KMOD_SHIFT] != 0:
+                        next_heartbeat['keys'][4]['change'] = 'KEY_DOWN'
+
                     pygame.gfxdraw.filled_circle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
                     pygame.gfxdraw.aacircle(screen, int(player_loc[0]), int(player_loc[1]), 25, (player_color[0], player_color[1], player_color[2]))
 
