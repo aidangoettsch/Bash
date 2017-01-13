@@ -154,9 +154,8 @@ async def frame():
                     if not uuid == player.id:
                         player2 = state.players[uuid]
                         if not player2.spectator:
-                            if player.location == player2.location \
-                                    and player.velocity == [0, 0] and player2.velocity == [0, 0]:
-                                player.velocity = [0, 1]
+                            if math.sqrt(abs(player.location[0] - player2.location[0]) ** 2 + abs(player.location[1] - player2.location[1]) ** 2) <= player_radius * 0.5:
+                                player.velocity = [0, 0]
                                 player.location[0] += 100
                             elif math.sqrt(abs(player.location[0] - player2.location[0]) ** 2 + abs(player.location[1] - player2.location[1]) ** 2) <= player_radius * 2:
                                 if player.velocity[0] < 1:
