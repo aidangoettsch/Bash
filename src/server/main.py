@@ -40,6 +40,7 @@ async def process_event(websocket, path):
                 player = Player(websocket, event['player_name'])
                 state.players[player.id] = player
                 confirm['player_id'] = player.id
+                player.color = event['color']
                 if len(state.players) == 1:
                     load_map('test')
             elif event['name'] == 'KEY':
@@ -175,9 +176,9 @@ async def frame():
                                 player.location[0] += 100
                             elif math.sqrt(abs(player.location[0] - player2.location[0]) ** 2 + abs(player.location[1] - player2.location[1]) ** 2) <= player_radius * 2:
                                 if player.velocity[0] < 1:
-                                    player.velocity[0] = -1 * player2.velocity[0] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                    player.velocity[0] = -1 * player2.velocity[0] * (1.5 if player.heavy else 0.75) * (1.5 if player2.heavy else 1)
                                 if player2.velocity[0] < 1:
-                                    player2.velocity[0] = -1 * player.velocity[0] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
+                                    player2.velocity[0] = -1 * player.velocity[0] * (1.5 if player.heavy else 0.75) * (1.5 if player2.heavy else 1)
                                 if player.velocity[1] < 1 and not player.on_ground:
                                     player.velocity[1] = -1 * player2.velocity[1] * (1.5 if player.heavy else 1) * (1.5 if player2.heavy else 1)
                                 if player2.velocity[1] < 1 and not player2.on_ground:
@@ -232,11 +233,11 @@ async def frame():
                 # Move player
                 player.location[0] += player.velocity[0]
                 player.location[1] += player.velocity[1]
-        all_dead = True
+        players_alive = 0
         for player_id in state.players:
             if not state.players[player_id].spectator:
-                all_dead = False
-        if all_dead:
+                players_alive += 1
+        if players_alive == 1:
             load_map('test')
         # Prepare websocket state
         send_state = copy.copy(state).__dict__
@@ -250,7 +251,7 @@ print("INFO > Server starting")
 
 # Create the event loop and queue the websocket server and game loop onto it
 loop = asyncio.get_event_loop()
-start_server = websockets.serve(process_event, 'localhost', 8080)
+start_server = websockets.serve(process_event, '0.0.0.0', 8080)
 loop.create_task(start_server)
 loop.create_task(frame())
 loop.run_forever()
