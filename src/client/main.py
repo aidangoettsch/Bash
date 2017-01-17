@@ -8,6 +8,7 @@ import pygame.gfxdraw
 import json
 import time
 import copy
+import re
 
 # Initialize and check pygame initialization
 try:
@@ -27,6 +28,8 @@ clock = pygame.time.Clock()
 mouse = pygame.mouse
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
+username = None
+player_color = (255, 0, 0)
 
 # =======================================================
 # States of the game
@@ -42,11 +45,6 @@ start_time = time.time()
 
 def_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
 
-menu = {
-    "buttons": [],
-    "shadow": None
-}
-
 default_connection = {
     "ip": "lccnetwork.dynu.net",
     "port": 8080
@@ -55,9 +53,15 @@ default_connection = {
 connection = {}
 
 events = {
-    "MOUSEDOWN": False
+    "MOUSEDOWN": False,
+    "KEY": None,
+    "KEY_THROTTLE": False
 }
 
+regex = {
+    "numbers": re.compile("[0-9]"),
+    "period": re.compile("[.]")
+}
 
 # Core Functions
 def render_menu():
@@ -93,9 +97,6 @@ def render_menu():
         MenuButton("Help", 350, 500, 500, 80, on_click_show_help)
     ]
 
-    # Main Menu Shadow Overlay
-    menu["shadow"] = Shadow()
-
 
 def fill_screen():
     """
@@ -116,7 +117,7 @@ def fill_screen():
         screen.fill((0, 96, 100))
 
 
-def blit_text(text, x, y, color, text_size, bold=False):
+def blit_text(text, x, y, color, text_size, bold=False, center=True):
     """
     Blits text to the screen
 
@@ -129,7 +130,15 @@ def blit_text(text, x, y, color, text_size, bold=False):
     else:
         text_surface = def_font.render(text, fgcolor=color, size=text_size)
 
-    screen.blit(text_surface[0], text_surface[0].get_rect(center=(x, y)))
+    if center:
+        screen.blit(text_surface[0], text_surface[0].get_rect(center=(x, y)))
+    elif center is False:
+        screen.blit(text_surface[0], (x, y))
+    elif center == "LCenter":
+        trect = text_surface[0].get_rect(center=(x, y))
+        trect[0] = x
+        screen.blit(text_surface[0], trect)
+
     return text_surface
 
 
@@ -175,8 +184,6 @@ class MenuButton():
         self.y                      = y
         self.w                      = w
         self.h                      = h
-        self.topl_loc               = (x, y)
-        self.botr_loc               = (x + w, y + h)
         self.mid_loc                = (x + w / 2, y + h / 2)
         self.on_click_function      = on_click_function
 
@@ -197,6 +204,36 @@ class MenuButton():
 
     def on_click(self):
         self.on_click_function()
+
+
+class ColorButton():
+    """
+    Represents a color button
+
+    :return:
+    """
+
+    def __init__(self, x, y, w, h, color):
+        self.x                      = x
+        self.y                      = y
+        self.w                      = w
+        self.h                      = h
+        self.color                  = color
+        self.selected               = False
+
+    def display_button(self):
+        self.button_fill   = pygame.draw.rect(screen, self.color, (self.x, self.y, self.w, self.h))
+        self.button_border = None
+
+    def on_hover(self):
+        self.button_border = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h), 3)
+
+    def off_hover(self):
+        self.button_border = None
+
+    def check_selected(self):
+        if self.selected:
+            self.button_border = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h), 5)
 
 
 class Shadow():
@@ -225,18 +262,45 @@ class TextBox():
         self.y = y
         self.w = w
         self.h = h
+        self.text_box = None
+        self.text = ""
+        self.focused = False
 
     def display(self):
-        self.box_fill = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
+        self.box_fill = pygame.draw.rect(screen, (67, 190, 187), (self.x, self.y, self.w, self.h))
         self.box_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def on_hover(self):
-        self.box_fill = pygame.draw.rect(screen, (67, 190, 187), (self.x, self.y, self.w, self.h))
+        self.box_fill = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
+        self.box_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
-    def on_click(self):
-        self.box_fill = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
+    def update_text(self):
+        self.text_box = blit_text(self.text, self.x + 10, self.y + 18, (0, 0, 0), 24, center=False)
 
+    def focus(self):
+        if self.focused:
+            self.box_fill = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
+            self.box_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
+    def type(self, char):
+        self.text = str(self.text) + str(char)
+
+    def backspace(self):
+        self.text = self.text[:-1]
+
+menu = {
+    "buttons": [],
+    "shadow": Shadow(),
+    "ip_textbox": TextBox(300, 400, 600, 50),
+    "username_textbox": TextBox(300, 400, 600, 50)
+}
+
+color_palette = {
+    "red": ColorButton(400, 500, 100, 100, (255, 0, 0)),
+    "blue": ColorButton(500, 500, 100, 100, (0, 0, 255)),
+    "yellow": ColorButton(600, 500, 100, 100, (255, 255, 0)),
+    "green": ColorButton(700, 500, 100, 100, (0, 255, 0))
+}
 
 
 def main():
@@ -245,17 +309,23 @@ def main():
 
     * Returns nothing
     """
-    global state, shadow_overlay, events, loop
+    global state, shadow_overlay, events, loop, username, player_color
 
     while True:
         # Pygame event handler
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 events["MOUSEDOWN"] = True
-            elif event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.MOUSEBUTTONUP:
                 events["MOUSEDOWN"] = False
+            if event.type == pygame.KEYDOWN:
+                if event.unicode != '':
+                    events["KEY"] = str(event.unicode)
+            if event.type == pygame.KEYUP:
+                events["KEY"] = None
+                events["KEY_THROTTLE"] = False
 
         # Fills screen background
         fill_screen()
@@ -291,25 +361,86 @@ def main():
                 connection["ip"] = "lccnetwork.dynu.net"
                 connection["port"] = 8080
 
-                state = "INGAME"
+                state = "INGAME_SETTINGS"
 
             if state == "CONNECTING_LOCALHOST":
                 connection["ip"] = "127.0.0.1"
                 connection["port"] = 8080
 
-                state = "INGAME"
+                state = "INGAME_SETTINGS"
 
             if state == "CONNECTING_CUSTOM":
-                fill_screen()
-                blit_text("Please open the console!", 600, 400, (255, 255, 255), 72, bold=True)
-                pygame.display.update()
-                connection["ip"] = input("INPUT > Please input the server IP: ")
-                connection["port"] = input("INPUT > Please input the server PORT: ")
+                menu["ip_textbox"].display()
+                blit_text("Enter the IP to the server below:", 600, 325, (255, 255, 255), 52, bold=True)
+                blit_text("Press ENTER to submit", 600, 700, (255, 255, 255), 32, bold=True)
 
-                state = "INGAME"
+                if events["MOUSEDOWN"]:
+                    menu["ip_textbox"].focused = False
+
+                if menu["ip_textbox"].box_fill.collidepoint(mouse.get_pos()):
+                    menu["ip_textbox"].on_hover()
+
+                    if events["MOUSEDOWN"]:
+                        menu["ip_textbox"].focused = True
+                else:
+                    menu["ip_textbox"].display()
+                menu["ip_textbox"].focus()
+
+                if menu["ip_textbox"].focused:
+                    if events["KEY"]:
+                        if events["KEY"] == "\x08" and events["KEY_THROTTLE"] is False:
+                            menu["ip_textbox"].backspace()
+                        elif events["KEY"] == "\r":
+                            connection["ip"] = menu["ip_textbox"].text
+                            connection["port"] = 8080
+                            state = "INGAME_SETTINGS"
+                            events["KEY"] = None
+                        elif events["KEY_THROTTLE"] is False:
+                            menu["ip_textbox"].type(events["KEY"])
+                        events["KEY_THROTTLE"] = True
+                menu["ip_textbox"].update_text()
+
+        if state == "INGAME_SETTINGS":
+            menu["username_textbox"].display()
+            blit_text("Enter a username & pick a color from below:", 600, 325, (255, 255, 255), 52, bold=True)
+            blit_text("Press ENTER to submit", 600, 700, (255, 255, 255), 32, bold=True)
+
+            for key in color_palette:
+                button = color_palette[key]
+                button.display_button()
+                if button.button_fill.collidepoint(mouse.get_pos()):
+                    button.on_hover()
+                    if events["MOUSEDOWN"]:
+                        player_color = button.color
+                else:
+                    button.off_hover()
+
+            if events["MOUSEDOWN"]:
+                menu["username_textbox"].focused = False
+
+            if menu["username_textbox"].box_fill.collidepoint(mouse.get_pos()):
+                menu["username_textbox"].on_hover()
+
+                if events["MOUSEDOWN"]:
+                    menu["username_textbox"].focused = True
+            else:
+                menu["username_textbox"].display()
+            menu["username_textbox"].focus()
+
+            if menu["username_textbox"].focused:
+                if events["KEY"]:
+                    if events["KEY"] == "\x08" and events["KEY_THROTTLE"] is False:
+                        menu["username_textbox"].backspace()
+                    elif events["KEY"] == "\r":
+                        username = menu["username_textbox"].text
+                        state = "INGAME"
+                    elif events["KEY_THROTTLE"] is False:
+                        menu["username_textbox"].type(events["KEY"])
+                    events["KEY_THROTTLE"] = True
+            menu["username_textbox"].update_text()
 
         # Game handler
-        if state.startswith("INGAME"):
+        if state == "INGAME":
             fill_screen()
             pygame.display.update()
 
@@ -329,13 +460,14 @@ def main():
 async def frame():
     global start_time
     global frame_interval
+    global player_color
     # try:
     async with websockets.connect("ws://" + connection["ip"] + ":" + str(connection["port"])) as websocket:
         start_time = time.time()
         join_packet = {
             "name": "JOIN",
-            "player_name": "testing",
-            "color": [0, 0, 0]
+            "player_name": username,
+            "color": [player_color[0], player_color[1], player_color[2]]
         }
         await websocket.send(json.dumps(join_packet))
         print('WEBSOCKET > {}'.format(json.dumps(join_packet)) + ' TO ' + str(websocket))
