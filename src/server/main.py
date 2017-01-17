@@ -9,6 +9,8 @@ import copy
 import random
 import math
 
+# TODO: Catch client DC
+
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
 gravity = 0.2
@@ -90,7 +92,14 @@ async def process_event(websocket, path):
         except KeyError:
             confirm['name'] = 'PARSE_EXCEPTION'
 
-        await websocket.send(json.dumps(confirm))
+        # Delete the player object if they have disconnected
+        try:
+            await websocket.send(json.dumps(confirm))
+        except:
+            for player_id in state.players:
+                player = state.players[player_id]
+                if player.socket == websocket:
+                    state.players[player_id] = None
         # print('WEBSOCKET > {}'.format(confirm) + ' TO ' + str(websocket))
 
 
@@ -124,6 +133,7 @@ async def frame():
     global frame_interval
     state.start_time = time.time()
     load_map('test')
+    # Main loop
     while True:
         await asyncio.sleep(frame_interval - ((time.time() - state.start_time) % frame_interval))
         state.start_time = time.time()
@@ -134,6 +144,7 @@ async def frame():
                 # Reflection
                 for obj in state.map['objects']:
                     if obj['type'] == 'rect':
+                        # Test bounding box and reflect
                         if player.location[0] - obj['x'] <= player_radius + obj['x_len'] and \
                                 (abs(player.location[1] - obj['y']) <= 0) and \
                                 (abs(player.velocity[0]) > 1):
@@ -146,10 +157,12 @@ async def frame():
                                 player.velocity[1] = 0
                             player.on_ground = True
                     elif obj['type'] == 'circle':
+                        # Test distance and reflect
                         if math.sqrt(abs(player.location[0] - obj['x']) ** 2 + abs(player.location[1] - obj['y']) ** 2) <= player_radius + obj['radius']:
                             player.velocity[0] *= -1 * (2 if player.heavy else 1.5)
                             player.velocity[1] *= -1 * (2 if player.heavy else 1.5)
                             player.on_ground = True
+                # Collision with other players
                 for uuid in state.players:
                     if not uuid == player.id:
                         player2 = state.players[uuid]
@@ -216,6 +229,7 @@ async def frame():
                 # Move player
                 player.location[0] += player.velocity[0]
                 player.location[1] += player.velocity[1]
+        # See if the round should end
         players_alive = 0
         for player_id in state.players:
             if not state.players[player_id].spectator:
