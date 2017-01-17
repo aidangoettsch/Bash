@@ -78,6 +78,7 @@ regex = {
 
 state = "MENU"
 
+
 # Core Functions
 def render_menu():
     """
@@ -108,7 +109,7 @@ def render_menu():
         MenuButton("Main Server", 350, 200, 500, 80, on_click_connect_main),
         MenuButton("Custom Server", 350, 300, 500, 80, on_click_connect_custom),
         MenuButton("Localhost", 350, 400, 500, 80, on_click_connect_localhost),
-        MenuButton("Help", 350, 500, 500, 80, on_click_show_help)
+        # MenuButton("Help", 350, 500, 500, 80, on_click_show_help)
     ]
 
 
@@ -164,13 +165,13 @@ def blit_text(text, x, y, color, text_size, bold=False, center=True):
 def alpha_rect(loc, size, color, opacity, center=False):
     """
     Creates a surface filled with a color that can have adjustable opacity
-    
+
     """
     # Creates surface, fills it, and opacitizes it
     rect = pygame.Surface(size)
     rect.set_alpha(opacity)
     rect.fill(color)
-    
+
     # Blits it to the screen based, and centers the surface if center is True
     if center:
         screen.blit(rect, rect.get_rect(center=loc))
@@ -181,7 +182,7 @@ def alpha_rect(loc, size, color, opacity, center=False):
 def player_tag(name, loc):
     """
     Creates a player nametag at the location
-    
+
     """
     # Creates an alpha_rect and blits it to the location
     tag_surface = blit_text(name, int(loc[0]), int(loc[1] - 50), (255, 255, 255), 12)
@@ -200,7 +201,7 @@ def reset():
 
     # Sets state to "MENU"
     state = "MENU"
-    
+
     # Restarts the main loop
     main()
 
@@ -215,14 +216,14 @@ class MenuButton():
     def __init__(self, text, x, y, w, h, on_click_function):
         """
         Class constructor
-        
+
         text = Text on the button
         x = X Location
         y = Y Location
         w = Button width
         h = Button height
         on_click_function = Function passed through to carry out what happens when the button is clicked
-        
+
         """
         self.text                   = text
         self.x                      = x
@@ -235,7 +236,7 @@ class MenuButton():
     def display_button(self):
         """
         Updates / draws the button
-        
+
         """
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
@@ -243,14 +244,14 @@ class MenuButton():
     def display_text(self):
         """
         Updates / draws the text
-        
+
         """
         self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1], (0, 0, 0), 32, bold=True)
 
     def on_hover(self):
         """
         Updates the button with the hover effects
-        
+
         """
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
@@ -258,7 +259,7 @@ class MenuButton():
     def off_hover(self):
         """
         Updates the button without the hover effects
-        
+
         """
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
@@ -266,7 +267,7 @@ class MenuButton():
     def on_click(self):
         """
         Calls the on_click_function() passed with the class construction
-        
+
         """
         self.on_click_function()
 
@@ -280,13 +281,13 @@ class ColorButton():
     def __init__(self, x, y, w, h, color):
         """
         Class constructor
-        
+
         x = X Location
         y = Y Location
         w = Width
         h = Height
         color = Color that the button represents
-        
+
         """
         self.x                      = x
         self.y                      = y
@@ -465,14 +466,16 @@ def main():
                     if events["KEY"]:
                         if events["KEY"] == "\x08" and events["KEY_THROTTLE"] is False:
                             menu["ip_textbox"].backspace()
-                        elif events["KEY"] == "\r":
-                            connection["ip"] = menu["ip_textbox"].text
-                            connection["port"] = 8080
-                            state = "INGAME_SETTINGS"
-                            events["KEY"] = None
                         elif events["KEY_THROTTLE"] is False:
                             menu["ip_textbox"].type(events["KEY"])
                         events["KEY_THROTTLE"] = True
+
+                if events["KEY"] == "\r":
+                    connection["ip"] = menu["ip_textbox"].text
+                    connection["port"] = 8080
+                    state = "INGAME_SETTINGS"
+                    events["KEY"] = None
+
                 menu["ip_textbox"].update_text()
 
         if state == "INGAME_SETTINGS":
@@ -506,12 +509,14 @@ def main():
                 if events["KEY"]:
                     if events["KEY"] == "\x08" and events["KEY_THROTTLE"] is False:
                         menu["username_textbox"].backspace()
-                    elif events["KEY"] == "\r":
-                        username = menu["username_textbox"].text
-                        state = "INGAME"
                     elif events["KEY_THROTTLE"] is False:
                         menu["username_textbox"].type(events["KEY"])
                     events["KEY_THROTTLE"] = True
+
+            if events["KEY"] == "\r":
+                username = menu["username_textbox"].text
+                state = "INGAME"
+
             menu["username_textbox"].update_text()
 
         # Game handler
