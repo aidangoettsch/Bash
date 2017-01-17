@@ -1,4 +1,4 @@
-# =====[ BASH PROJECT ]=====
+# =====[ BASH // PYGAME PROJECT ]=====
 # - File Purpose: Client
 # - File Created: 1/8/2017
 # - Contributors: CF12, yayes2
@@ -26,16 +26,44 @@ except:
 # Sets the title of the window
 pygame.display.set_caption("BASH - Created by Aidan G. & Brian X.")
 
-# Variable Declarations
+# =====[ VARIABLE DECLARATIONS ]=====
+# Screen related variables
 screen_w = 1200
 screen_h = 800
 screen = pygame.display.set_mode((screen_w, screen_h))
+
+# Time related variables
 clock = pygame.time.Clock()
-mouse = pygame.mouse
 target_fps = 60.0
 frame_interval = 1.0 / target_fps
-username = None
+start_time = time.time()
+
+# Player related variables
+username = "New Player"
 player_color = (255, 0, 0)
+
+# Connection related variables
+default_connection = {
+    "ip": "lccnetwork.dynu.net",
+    "port": 8080
+}
+connection = {}
+
+events = {
+    "MOUSEDOWN": False,
+    "KEY": None,
+    "KEY_THROTTLE": False
+}
+
+
+# Other variables
+mouse = pygame.mouse
+def_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
+regex = {
+    "numbers": re.compile("[0-9]"),
+    "period": re.compile("[.]")
+}
+
 
 # =======================================================
 # States of the game
@@ -47,28 +75,8 @@ player_color = (255, 0, 0)
 # INGAME_SETTINGS = In the nickname and color selection screen
 # INGAME = In the game and playing
 # =======================================================
+
 state = "MENU"
-start_time = time.time()
-
-def_font = pygame.freetype.Font('src/client/resources/Slabo_REG.ttf', 27)
-
-default_connection = {
-    "ip": "lccnetwork.dynu.net",
-    "port": 8080
-}
-
-connection = {}
-
-events = {
-    "MOUSEDOWN": False,
-    "KEY": None,
-    "KEY_THROTTLE": False
-}
-
-regex = {
-    "numbers": re.compile("[0-9]"),
-    "period": re.compile("[.]")
-}
 
 # Core Functions
 def render_menu():
@@ -130,13 +138,16 @@ def blit_text(text, x, y, color, text_size, bold=False, center=True):
     Blits text to the screen
 
     """
+    # Globals
     global menu
 
+    # Bolds the text if bold is True
     if bold:
         text_surface = def_font.render(text, fgcolor=color, style=pygame.freetype.STYLE_STRONG, size=text_size)
     else:
         text_surface = def_font.render(text, fgcolor=color, size=text_size)
 
+    # Centers the text if center is True
     if center:
         screen.blit(text_surface[0], text_surface[0].get_rect(center=(x, y)))
     elif center is False:
@@ -146,13 +157,21 @@ def blit_text(text, x, y, color, text_size, bold=False, center=True):
         trect[0] = x
         screen.blit(text_surface[0], trect)
 
+    # Returns the surface so it can be used further
     return text_surface
 
 
 def alpha_rect(loc, size, color, opacity, center=False):
+    """
+    Creates a surface filled with a color that can have adjustable opacity
+    
+    """
+    # Creates surface, fills it, and opacitizes it
     rect = pygame.Surface(size)
     rect.set_alpha(opacity)
     rect.fill(color)
+    
+    # Blits it to the screen based, and centers the surface if center is True
     if center:
         screen.blit(rect, rect.get_rect(center=loc))
     else:
@@ -160,6 +179,11 @@ def alpha_rect(loc, size, color, opacity, center=False):
 
 
 def player_tag(name, loc):
+    """
+    Creates a player nametag at the location
+    
+    """
+    # Creates an alpha_rect and blits it to the location
     tag_surface = blit_text(name, int(loc[0]), int(loc[1] - 50), (255, 255, 255), 12)
     tag_rect = tag_surface[0].get_rect(center=loc)
     alpha_rect((int(loc[0]), int(loc[1] - 50)), (tag_rect[2] + 20, tag_rect[3] + 15), (0, 0, 0), 50, center=True)
@@ -169,11 +193,15 @@ def reset():
     """
     Reset the game state after exiting from a game or when starting the game.
     Renders the portions of the client that are out of the game, such as the menu.
-    :return:
+
     """
+    # Globals
     global state
 
+    # Sets state to "MENU"
     state = "MENU"
+    
+    # Restarts the main loop
     main()
 
 
@@ -182,10 +210,20 @@ class MenuButton():
     """
     Represents a menu button
 
-    :return:
     """
 
     def __init__(self, text, x, y, w, h, on_click_function):
+        """
+        Class constructor
+        
+        text = Text on the button
+        x = X Location
+        y = Y Location
+        w = Button width
+        h = Button height
+        on_click_function = Function passed through to carry out what happens when the button is clicked
+        
+        """
         self.text                   = text
         self.x                      = x
         self.y                      = y
@@ -195,21 +233,41 @@ class MenuButton():
         self.on_click_function      = on_click_function
 
     def display_button(self):
+        """
+        Updates / draws the button
+        
+        """
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def display_text(self):
+        """
+        Updates / draws the text
+        
+        """
         self.button_text   = blit_text(self.text, self.mid_loc[0], self.mid_loc[1], (0, 0, 0), 32, bold=True)
 
     def on_hover(self):
+        """
+        Updates the button with the hover effects
+        
+        """
         self.button_fill   = pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def off_hover(self):
+        """
+        Updates the button without the hover effects
+        
+        """
         self.button_fill   = pygame.draw.rect(screen, (167, 255, 235), (self.x, self.y, self.w, self.h))
         self.button_border = pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.w, self.h), 3)
 
     def on_click(self):
+        """
+        Calls the on_click_function() passed with the class construction
+        
+        """
         self.on_click_function()
 
 
@@ -217,10 +275,19 @@ class ColorButton():
     """
     Represents a color button
 
-    :return:
     """
 
     def __init__(self, x, y, w, h, color):
+        """
+        Class constructor
+        
+        x = X Location
+        y = Y Location
+        w = Width
+        h = Height
+        color = Color that the button represents
+        
+        """
         self.x                      = x
         self.y                      = y
         self.w                      = w
@@ -364,6 +431,7 @@ def main():
 
         # Connecting screen handler
         if state.startswith("CONNECTING"):
+            # Connection handlers
             if state == "CONNECTING_MAIN":
                 connection["ip"] = "lccnetwork.dynu.net"
                 connection["port"] = 8080
