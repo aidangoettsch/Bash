@@ -1,3 +1,9 @@
+# =====[ BASH PROJECT ]=====
+# - File Purpose: Client
+# - File Created: 1/8/2017
+# - Contributors: CF12, yayes2
+
+# Import Libraries
 import asyncio
 import websockets
 import os
@@ -17,7 +23,7 @@ except:
     print("Pygame initialization failed. Check your game installation.")
     sys.exit()
 
-# Sets the caption of the window
+# Sets the title of the window
 pygame.display.set_caption("BASH - Created by Aidan G. & Brian X.")
 
 # Variable Declarations
@@ -38,7 +44,8 @@ player_color = (255, 0, 0)
 # MENU = Main menu screen
 # CONNECTING_LOCALHOST = Connecting to localhost server
 # CONNECTING_MAIN = Connecting to the main server
-# INGAME = In the game
+# INGAME_SETTINGS = In the nickname and color selection screen
+# INGAME = In the game and playing
 # =======================================================
 state = "MENU"
 start_time = time.time()
@@ -66,9 +73,8 @@ regex = {
 # Core Functions
 def render_menu():
     """
-    Renders the menu screen
+    Renders the main menu screen
 
-    :return:
     """
     # Declare globals
     global menu
@@ -103,8 +109,10 @@ def fill_screen():
     Fills the background of the screen based on the state variable, and applies shadow if necessary
 
     """
+    # Globals
     global menu, state
 
+    # Detects states and fills background based on it
     if state.startswith("MENU"):
         screen.fill((0, 150, 136))
     if state.startswith("CONNECTING"):
@@ -121,7 +129,6 @@ def blit_text(text, x, y, color, text_size, bold=False, center=True):
     """
     Blits text to the screen
 
-    :return:
     """
     global menu
 
